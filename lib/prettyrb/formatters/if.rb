@@ -81,13 +81,12 @@ module Prettyrb
 
       def elsifs
         return [] if !node.children[2] || node.children[2].type != :if
-        return [] if node.children[1].type == :if # maybe remove?
 
         @_elsifs ||= find_elsifs(node.children[2], [])
       end
 
       def find_elsifs(node, elsifs)
-        if node.type == :if && node.children[1].type != :if && (node.children[2] && node.children[2].type == :if)
+        if node.type == :if && (node.children[2] && node.children[2].type == :if)
           find_elsifs(node.children[2], elsifs + [node])
         elsif elsifs.length == 0
           []

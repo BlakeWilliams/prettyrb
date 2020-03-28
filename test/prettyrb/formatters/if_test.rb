@@ -75,6 +75,78 @@ module Prettyrb
 
         assert_equal expected, formatter.format
       end
+
+      def test_elsif_with_if_nested_in_elsif
+        basic_if = parse_source <<~RUBY
+        if 1
+          'a'
+        elsif 2
+          if 1
+            true
+          else
+            false
+          end
+        elsif 3
+          'c'
+        else
+          'n/a'
+        end
+        RUBY
+        formatter = If.new(basic_if, 0, nil)
+
+        expected = <<~RUBY.rstrip
+        if 1
+          "a"
+        elsif 2
+          if 1
+            true
+          else
+            false
+          end
+        elsif 3
+          "c"
+        else
+          "n/a"
+        end
+        RUBY
+
+        assert_equal expected, formatter.format
+      end
+
+      def test_elsif_with_if_nested_in_else
+        basic_if = parse_source <<~RUBY
+        if 1
+          'a'
+        elsif 2
+          'b'
+        elsif 3
+          'c'
+        else
+          if 4
+            true
+          else
+            false
+          end
+        end
+        RUBY
+        formatter = If.new(basic_if, 0, nil)
+
+        expected = <<~RUBY.rstrip
+        if 1
+          "a"
+        elsif 2
+          "b"
+        elsif 3
+          "c"
+        elsif 4
+          true
+        else
+          false
+        end
+        RUBY
+
+        assert_equal expected, formatter.format
+      end
     end
   end
 end
