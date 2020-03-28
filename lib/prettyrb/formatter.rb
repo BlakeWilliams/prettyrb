@@ -26,6 +26,8 @@ module Prettyrb
         Formatters::False
       when :true
         Formatters::True
+      when :nil
+        Formatters::Nil
       else
         raise "can't handle #{node.inspect}"
       end

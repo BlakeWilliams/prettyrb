@@ -5,6 +5,27 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_supports_booleans
+    source = <<~RUBY
+    if 1
+      true
+    else
+      false
+    end
+    RUBY
+    result = Prettyrb::Formatter.new(source).format
+
+    expected = <<~RUBY
+    if 1
+      true
+    else
+      false
+    end
+    RUBY
+
+    assert_equal expected.strip, result
+  end
+
   def test_formats_basic_statement
     source = <<~RUBY
     if 1

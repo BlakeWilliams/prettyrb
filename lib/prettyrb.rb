@@ -13,6 +13,9 @@ require "prettyrb/formatters/if"
 require "prettyrb/formatters/lit"
 require "prettyrb/formatters/or"
 require "prettyrb/formatters/string"
+require "prettyrb/formatters/true"
+require "prettyrb/formatters/false"
+require "prettyrb/formatters/nil"
 
 module Prettyrb
   class Error < StandardError; end

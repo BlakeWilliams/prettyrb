@@ -2,13 +2,110 @@ module Prettyrb
   module Formatters
     class If < Base
       def format
-        condition, body = node.children
-        start = "#{indents}if "
-        condition = Formatter.for(condition).new(condition, @indentation + 2, self).format
-        body = Formatter.for(body).new(body, @indentation + 2, self).format
-        ending = "#{indents}end"
+        if has_elsifs?
+          format_if_with_elsifs
+        else
+          if else_node
+            format_if_with_else
+          else
+            format_if
+          end
+        end
+      end
 
-        "#{start}#{condition}\n#{body}\n#{ending}"
+      private
+
+      def format_if
+        [
+          "#{indents}if #{subformatter(condition).skip_indentation_unless_multiline.format}",
+          subformatter(body).format,
+          "#{indents}end"
+        ].join("\n")
+      end
+
+      def format_if_with_else
+        [
+          "#{indents}if #{subformatter(condition).skip_indentation_unless_multiline.format}",
+          subformatter(body).format,
+          "#{indents}else",
+          subformatter(else_node).format,
+          "#{indents}end"
+        ].join("\n")
+      end
+
+      def format_if_with_elsifs
+        extra_conditions = elsifs.map do |elsif_node|
+          ElsifFormatter.new(elsif_node, indentation, self).format
+        end
+
+        if else_node
+          else_body = Formatter.for(else_node).new(else_node, indentation + 2, self).format
+          [
+            "#{indents}if #{subformatter(condition).skip_indentation_unless_multiline.format}",
+            subformatter(body).format,
+            extra_conditions.join("\n"),
+            "#{indents}else",
+            subformatter(else_node).format,
+            "#{indents}end"
+          ].join("\n")
+        else
+          [
+            "#{indents}if #{subformatter(condition).skip_indentation_unless_multiline.format}",
+            subformatter(body).format,
+            extra_conditions.join("\n"),
+            "#{indents}end"
+          ].join("\n")
+        end
+      end
+
+      def condition
+        node.children[0]
+      end
+
+      def body
+        node.children[1]
+      end
+
+      def else_node
+        if has_elsifs?
+          # The "else" when "elsifs" are present is always the last elsif's last child
+          elsifs[-1].children[2]
+        else
+          node.children[2]
+        end
+      end
+
+      def has_elsifs?
+        elsifs.length != 0
+      end
+
+      def elsifs
+        return [] if !node.children[2] || node.children[2].type != :if
+
+        @_elsifs ||= find_elsifs(node.children[2], [])
+      end
+
+      def find_elsifs(node, elsifs)
+        if node.type == :if && (node.children[2] && node.children[2].type == :if)
+          find_elsifs(node.children[2], elsifs + [node])
+        elsif elsifs.length == 0
+          []
+        else
+          elsifs + [node]
+        end
+      end
+    end
+
+    class ElsifFormatter < If
+      def format
+        if node.type != :if
+          raise "Something wrong with #{node}. Not an if"
+        end
+
+        [
+          "#{indents}elsif #{subformatter(condition).skip_indentation_unless_multiline.format}",
+          subformatter(body).format,
+        ].join("\n")
       end
     end
   end
