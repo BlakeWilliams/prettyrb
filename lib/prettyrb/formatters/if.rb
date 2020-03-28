@@ -69,7 +69,7 @@ module Prettyrb
       def else_node
         if has_elsifs?
           # The "else" when "elsifs" are present is always the last elsif's last child
-          elsifs[-1].children[-1]
+          elsifs[-1].children[2]
         else
           node.children[2]
         end
@@ -104,7 +104,7 @@ module Prettyrb
         end
 
         [
-          "#{indents}elsif #{subformatter(condition).format}",
+          "#{indents}elsif #{subformatter(condition).skip_indentation_unless_multiline.format}",
           subformatter(body).format,
         ].join("\n")
       end
