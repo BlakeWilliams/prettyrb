@@ -1,6 +1,8 @@
 # Prettyrb
 
-Super experimental gem for auto-formatting Ruby files. Pronounced "pretty-erb"
+Super experimental gem for auto-formatting Ruby files. AKA the code isn't great, but things are kind of working.
+
+Pronounced "pretty-erb".
 
 ## Installation
 
