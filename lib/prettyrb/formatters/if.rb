@@ -97,23 +97,16 @@ module Prettyrb
       end
     end
 
-    class ElsifFormatter < Base
-      def in_conditions?
-        !!@in_conditions
-      end
-
+    class ElsifFormatter < If
       def format
         if node.type != :if
           raise "Something wrong with #{node}. Not an if"
         end
-        children = node.children
 
-        @in_conditions = true
-        condition = Formatter.for(children[0]).new(children[0], indentation + 2, self).format
-        @in_conditions = false
-
-        body = Formatter.for(children[1]).new(children[1], indentation + 2, self).format
-        "#{indents}elsif #{condition}\n#{body}"
+        [
+          "#{indents}elsif #{subformatter(condition).format}",
+          subformatter(body).format,
+        ].join("\n")
       end
     end
   end
