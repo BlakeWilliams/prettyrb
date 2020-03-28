@@ -4,8 +4,8 @@ module Prettyrb
       def format
         if infix?
           left_node, operator, right_node = node.children
-          left = Formatter.for(left_node).new(left_node, @indentation, self).format
-          right = Formatter.for(right_node).new(right_node, @indentation, self).format
+          left = Formatter.for(left_node).new(left_node, 0, self).format
+          right = Formatter.for(right_node).new(right_node, 0, self).format
 
           if needs_parens?
             "(#{left} #{operator} #{right})"
@@ -27,6 +27,18 @@ module Prettyrb
 
       def needs_parens?
         parent&.type == :or || parent&.type == :and
+      end
+
+      def indents
+        if over_line_length?
+          super
+        else
+          ''
+        end
+      end
+
+      def over_line_length?
+        false
       end
     end
   end

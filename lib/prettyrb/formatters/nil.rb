@@ -1,8 +1,8 @@
 module Prettyrb
   module Formatters
-    class False < Base
+    class Nil < Base
       def format
-        "#{indents}false"
+        "nil"
       end
     end
   end

@@ -13,8 +13,8 @@ module Prettyrb
         node.type
       end
 
-      def indents
-        ' ' * indentation
+      def indents(extra = 0)
+        ' ' * (indentation + extra)
       end
     end
   end
