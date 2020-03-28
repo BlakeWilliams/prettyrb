@@ -2,22 +2,24 @@ PATH
   remote: .
   specs:
     prettyrb (0.1.0)
-      ruby_parser (~> 3.14)
+      parser (~> 2.7.0.5)
 
 GEM
   remote: https://rubygems.org/
   specs:
+    ast (2.4.0)
+    byebug (11.1.1)
     minitest (5.14.0)
+    parser (2.7.0.5)
+      ast (~> 2.4.0)
     rake (10.5.0)
-    ruby_parser (3.14.2)
-      sexp_processor (~> 4.9)
-    sexp_processor (4.14.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   bundler (~> 1.17)
+  byebug (~> 11.1)
   minitest (~> 5.0)
   prettyrb!
   rake (~> 10.0)

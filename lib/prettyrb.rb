@@ -1,12 +1,12 @@
-require "ruby_parser"
+require "parser/current"
 require "prettyrb/version"
 
 module Prettyrb
   class Error < StandardError; end
 
   class Formatter
-    def self.for(sexp)
-      case sexp.sexp_type
+    def self.for(node)
+      case node.type
       when :if
         IfFormatter
       when :str
@@ -15,18 +15,20 @@ module Prettyrb
         OrFormatter
       when :and
         AndFormatter
-      when :lit
+      when :int
         LitFormatter
-      when :call
+      when :send
         CallFormatter
       when :class
         ClassFormatter
-      when :cdecl
-        CdeclFormatter
+      when :casgn
+        CassignFormatter
       when :array
         ArrayFormatter
+      when :begin
+        BeginFormatter
       else
-        raise "can't handle #{sexp}"
+        raise "can't handle #{node}"
       end
     end
 
@@ -35,19 +37,19 @@ module Prettyrb
     end
 
     def format
-      sexp_tree = RubyParser.new.parse(@code)
+      root_node, comments = Parser::CurrentRuby.parse_with_comments(@code)
 
-      self.class.for(sexp_tree).new(sexp_tree, 0, nil).format
+      self.class.for(root_node).new(root_node, 0, nil).format
     end
 
     private
 
-    def format_type(sexp, indentation)
-      case sexp.sexp_type
+    def format_type(node, indentation)
+      case node.node_type
       when :if
-        IfFormatter.new(sexp, indentation).format
+        IfFormatter.new(node, indentation).format
       else
-        raise "can't handle #{sexp}"
+        raise "can't handle #{node}"
       end
     end
 
@@ -55,16 +57,16 @@ module Prettyrb
   end
 
   class BaseFormatter
-    attr_reader :sexp, :indentation, :parent
+    attr_reader :node, :indentation, :parent
 
-    def initialize(sexp, indentation, parent)
-      @sexp = sexp
+    def initialize(node, indentation, parent)
+      @node = node
       @indentation = indentation
       @parent = parent
     end
 
     def type
-      sexp.sexp_type
+      node.type
     end
 
     def indents
@@ -74,26 +76,27 @@ module Prettyrb
 
   class LitFormatter < BaseFormatter
     def format
-      sexp[1]
+      node.children[0]
     end
   end
 
   class StringFormatter < BaseFormatter
     def format
       if parent.type == :array
-        "\"#{sexp[1]}\""
+        "\"#{node.children[0]}\""
       else
-        "#{indents}\"#{sexp[1]}\""
+        "#{indents}\"#{node.children[0]}\""
       end
     end
   end
 
   class IfFormatter < BaseFormatter
     def format
-      start = "#{' ' * @indentation}if "
-      condition = Formatter.for(sexp[1]).new(@sexp[1], @indentation + 2, self).format
-      body = Formatter.for(sexp[2]).new(@sexp[2], @indentation + 2, self).format
-      ending = "#{' ' * @indentation}end"
+      condition, body = node.children
+      start = "#{indents}if "
+      condition = Formatter.for(condition).new(condition, @indentation + 2, self).format
+      body = Formatter.for(body).new(body, @indentation + 2, self).format
+      ending = "#{indents}end"
 
       "#{start}#{condition}\n#{body}\n#{ending}"
     end
@@ -101,8 +104,9 @@ module Prettyrb
 
   class OrFormatter < BaseFormatter
     def format
-      left = Formatter.for(sexp[1]).new(sexp[1], @indentation, self).format
-      right = Formatter.for(sexp[2]).new(sexp[2], @indentation, self).format
+      left_node, right_node = node.children
+      left = Formatter.for(left_node).new(left_node, @indentation, self).format
+      right = Formatter.for(right_node).new(right_node, @indentation, self).format
 
       if needs_parens?
         "(#{left} || #{right})"
@@ -120,8 +124,9 @@ module Prettyrb
 
   class AndFormatter < BaseFormatter
     def format
-      left = Formatter.for(sexp[1]).new(sexp[1], @indentation, self).format
-      right = Formatter.for(sexp[2]).new(sexp[2], @indentation, self).format
+      left_node, right_node = node.children
+      left = Formatter.for(left_node).new(left_node, @indentation, self).format
+      right = Formatter.for(right_node).new(right_node, @indentation, self).format
 
       if needs_parens?
         "(#{left} && #{right})"
@@ -140,24 +145,26 @@ module Prettyrb
   class CallFormatter < BaseFormatter
     def format
       if infix?
-        left = Formatter.for(sexp[1]).new(sexp[1], @indentation, self).format
-        right = Formatter.for(sexp[3]).new(sexp[3], @indentation, self).format
+        left_node, operator, right_node = node.children
+        left = Formatter.for(left_node).new(left_node, @indentation, self).format
+        right = Formatter.for(right_node).new(right_node, @indentation, self).format
 
         if needs_parens?
-          "(#{left} #{sexp[2]} #{right})"
+          "(#{left} #{operator} #{right})"
         else
-          "#{left} #{sexp[2]} #{right}"
+          "#{left} #{operator} #{right}"
         end
       else
-        content = Formatter.for(sexp[1]).new(sexp[1], @indentation, self).format
-        "#{content}.#{sexp[2]}"
+        body, method = node.children
+        content = Formatter.for(body).new(body, @indentation, self).format
+        "#{content}.#{method}"
       end
     end
 
     private
 
     def infix?
-      sexp.length == 4
+      node.children.length == 3
     end
 
     def needs_parens?
@@ -167,25 +174,38 @@ module Prettyrb
 
   class ClassFormatter < BaseFormatter
     def format
-      content = Formatter.for(sexp[3]).new(sexp[3], indentation + 2, self).format
-      "#{indents}class #{sexp[1]}\n#{content}\n#{indents}end" # TODO handle inheritance
+      class_details, inherits_from, body = node.children
+      _, class_name = class_details.children
+
+      content = Formatter.for(body).new(body, indentation + 2, self).format
+      "#{indents}class #{class_name}\n#{content}\n#{indents}end" # TODO handle inheritance
     end
   end
 
-  class CdeclFormatter < BaseFormatter
+  class CassignFormatter < BaseFormatter
     def format
-      content = Formatter.for(sexp[2]).new(sexp[2], indentation + 2, self).format
-      "#{indents}#{sexp[1]} = #{content}"
+      _uknown, variable, body = node.children
+      content = Formatter.for(body).new(body, indentation + 2, self).format
+      "#{indents}#{variable} = #{content}"
     end
   end
 
   class ArrayFormatter < BaseFormatter
     def format
-      elements = sexp[1..-1].map do |nested_sexp|
-        Formatter.for(nested_sexp).new(nested_sexp, indentation + 2, self).format
+      elements = node.children.map do |nested_node|
+        Formatter.for(nested_node).new(nested_node, indentation + 2, self).format
       end
 
       "[#{elements.join(", ")}]"
+    end
+  end
+
+  class BeginFormatter < BaseFormatter
+    def format
+      body = node.children[0]
+      content = Formatter.for(body).new(body, indentation + 2, self).format
+
+      "(#{content})"
     end
   end
 end
