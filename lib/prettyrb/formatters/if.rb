@@ -5,45 +5,64 @@ module Prettyrb
         !!@in_conditions
       end
 
+      def condition
+        node.children[0]
+      end
+
+      def body
+        node.children[1]
+      end
+
+      def else_node
+        # The "else" when "elsifs" are present is always the last elsif's last child
+        elsifs[-1].children[-1]
+      end
+
       def format
-        condition, body = node.children[0..1]
         start = "#{indents}if "
         ending = "#{indents}end"
 
-        body = Formatter.for(body).new(body, indentation + 2, self).format
-
-        @in_conditions = true
-        condition = Formatter.for(condition).new(condition, indentation + 2, self).format
-        @in_conditions = false
-
         if has_elsifs?
           extra_conditions = elsifs.map do |elsif_node|
-            if elsif_node.type != :if
-              raise "Something wrong with #{elsif_node}. Not an if"
-            end
-            children = elsif_node.children
-
-            @in_conditions = true
-            elsif_condition = Formatter.for(children[0]).new(children[0], indentation + 2, self).format
-            @in_conditions = false
-
-            elsif_body = Formatter.for(children[1]).new(children[1], indentation + 2, self).format
-            "#{indents}elsif #{elsif_condition}\n#{elsif_body}"
+            ElsifFormatter.new(elsif_node, indentation, self).format
           end
 
-          else_node = elsifs[-1].children[-1]
           if else_node
             else_body = Formatter.for(else_node).new(else_node, indentation + 2, self).format
-            "#{start}#{condition}\n#{body}\n#{extra_conditions.join("\n")}\n#{indents}else\n#{else_body}\n#{ending}"
+            [
+              "#{indents}if #{subformatter(condition).skip_indentation_unless_multiline.format}",
+              subformatter(body).format,
+              extra_conditions.join("\n"),
+              "#{indents}else",
+              subformatter(else_node).format,
+              "#{indents}end"
+            ].join("\n")
           else
-            "#{start}#{condition}\n#{body}\n#{extra_conditions.join("\n")}\n#{ending}"
+            [
+              "#{indents}if #{subformatter(condition).skip_indentation_unless_multiline.format}",
+              subformatter(body).format,
+              extra_conditions.join("\n"),
+              "#{indents}end"
+            ].join("\n")
           end
         else
           if else_body = node.children[2]
             else_body = Formatter.for(else_body).new(else_body, @indentation + 2, self).format
+
             "#{start}#{condition}\n#{body}\n#{indents}else\n#{else_body}\n#{ending}"
+            [
+              "#{indents}if #{subformatter(condition).skip_indentation_unless_multiline.format}",
+              subformatter(body).format,
+              "#{indents}else",
+              else_body,
+              "#{indents}end"
+            ].join("\n")
           else
-            "#{start}#{condition}\n#{body}\n#{ending}"
+            [
+              "#{indents}if #{subformatter(condition).skip_indentation_unless_multiline.format}",
+              subformatter(body).format,
+              "#{indents}end"
+            ].join("\n")
           end
         end
       end
@@ -66,6 +85,26 @@ module Prettyrb
         else
           elsifs + [node]
         end
+      end
+    end
+
+    class ElsifFormatter < Base
+      def in_conditions?
+        !!@in_conditions
+      end
+
+      def format
+        if node.type != :if
+          raise "Something wrong with #{node}. Not an if"
+        end
+        children = node.children
+
+        @in_conditions = true
+        condition = Formatter.for(children[0]).new(children[0], indentation + 2, self).format
+        @in_conditions = false
+
+        body = Formatter.for(children[1]).new(children[1], indentation + 2, self).format
+        "#{indents}elsif #{condition}\n#{body}"
       end
     end
   end
