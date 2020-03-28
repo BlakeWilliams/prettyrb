@@ -12,7 +12,7 @@ GEM
     minitest (5.14.0)
     parser (2.7.0.5)
       ast (~> 2.4.0)
-    rake (10.5.0)
+    rake (12.3.3)
 
 PLATFORMS
   ruby
@@ -22,7 +22,7 @@ DEPENDENCIES
   byebug (~> 11.1)
   minitest (~> 5.0)
   prettyrb!
-  rake (~> 10.0)
+  rake (~> 12.3.3)
 
 BUNDLED WITH
    1.17.2
