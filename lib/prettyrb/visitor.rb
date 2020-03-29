@@ -111,7 +111,7 @@ module Prettyrb
         visit node.children[0]
         write " do"
 
-        if node.children[1]
+        if node.children[1].children.length > 0
           write " |"
           visit node.children[1]
           write "|"
@@ -126,8 +126,9 @@ module Prettyrb
         newline
 
         write "end"
+        newline
       when :send
-        if [:!=, :==, :+, :-, :*, :/].include?(node.children[1])
+        if [:!=, :==, :+, :-, :*, :/, :<<].include?(node.children[1])
           visit node.children[0]
           write " "
           write node.children[1].to_s
@@ -185,8 +186,11 @@ module Prettyrb
           write conditions
 
           newline
-          visit node.children[1]
-          newline
+
+          if node.children[1]
+            visit node.children[1]
+            newline
+          end
         end
 
         if node.children[2]
@@ -248,6 +252,7 @@ module Prettyrb
         node.children.map do |child|
           if child.type == :str
             write child.children[0]
+            write child.children[0].gsub("\n", "\\n")
           else
             write '#{'
             visit child
@@ -294,7 +299,6 @@ module Prettyrb
           write possible_output
         end
       when :def
-        newline
         write "def "
         write node.children[0].to_s
         if node.children[1].children.length > 0
@@ -334,16 +338,57 @@ module Prettyrb
         if !possible_output.start_with?("\n")
           write " "
         end
+      when :case
+        write "case "
+        visit node.children[0]
+        newline
+        node.children[1..-1].each do |child|
+          if child.type != :when
+            write "else"
+            newline
+
+            indent do
+              visit child
+            end
+          else
+            visit child
+            newline
+          end
+        end
+        write "end"
+      when :when
+        write "when "
+        visit node.children[0]
+        newline
+        indent do
+          visit node.children[1]
+        end
       when :or_asgn
         visit node.children[0]
         write " ||= " # TODO handle long lines here too
         visit node.children[1]
       when :ivasgn
         write node.children[0].to_s
+      when :ivar
+        write node.children[0].to_s
+      when :blockarg
+        write node.children[0].to_s
+      when :yield
+        write "yield"
+      when :op_asgn
+        visit node.children[0]
+        write " "
+        write node.children[1].to_s
+        write " "
+        visit node.children[2]
       when :lvasgn
         write node.children[0].to_s
         write " = "
 
+        visit node.children[1]
+      when :irange
+        visit node.children[0]
+        write ".."
         visit node.children[1]
       else
         raise "unhandled node type `#{node.type}`\nnode: #{node}"

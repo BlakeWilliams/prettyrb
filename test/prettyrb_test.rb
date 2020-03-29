@@ -97,7 +97,7 @@ class PrettyrbTest < Minitest::Test
     RUBY
     result = Prettyrb::Formatter.new(source).format
 
-    assert_equal expected.strip, result
+    assert_equal expected, result
   end
 
   def test_array_assign
@@ -113,7 +113,7 @@ class PrettyrbTest < Minitest::Test
     RUBY
     result = Prettyrb::Formatter.new(source).format
 
-    assert_equal expected.strip, result
+    assert_equal expected.rstrip, result
   end
 
   def test_array_assign_with_join
