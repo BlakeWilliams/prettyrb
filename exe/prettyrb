@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require "prettyrb"
+require "prettyrb/cli"
+
+Prettyrb::CLI.start

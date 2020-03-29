@@ -3,6 +3,7 @@ PATH
   specs:
     prettyrb (0.1.0)
       parser (~> 2.7.0.5)
+      thor
 
 GEM
   remote: https://rubygems.org/
@@ -13,6 +14,7 @@ GEM
     parser (2.7.0.5)
       ast (~> 2.4.0)
     rake (12.3.3)
+    thor (1.0.1)
 
 PLATFORMS
   ruby
