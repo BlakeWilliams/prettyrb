@@ -10,7 +10,7 @@ module Prettyrb
 
       @newline = true
       @multiline_conditional_level = 0
-      @__current_node = nil
+      @previous_node = nil
     end
 
     def indents
@@ -89,6 +89,7 @@ module Prettyrb
         write "end"
         newline
       when :class
+        newline unless @previous_node.nil?
         write "class "
         visit node.children[0]
         newline
@@ -156,7 +157,7 @@ module Prettyrb
             write ")"
           end
 
-          newline if @previous_node.type == :class 
+          newline if @previous_node&.type == :class 
         else
           visit node.children[0]
           write "."
@@ -174,6 +175,7 @@ module Prettyrb
           end
         end
       when :if
+        newline unless @previous_node.nil?
         write "if"
         indent do
           conditions = capture do
@@ -261,15 +263,23 @@ module Prettyrb
         end
         write "\""
       when :begin
-        if @previous_node.type == :or || @previous_node.type == :and
+        if @previous_node&.type == :or || @previous_node&.type == :and
           write "("
-          node.children.map { |child| visit child }
+          @previous_node = nil
+          node.children.map do |child|
+            visit child
+            @previous_node = child
+          end
+          @previous_node = nil
           write ")"
         else
+          @previous_node = nil
           node.children.each_with_index do |child, index|
             visit child
             newline unless index == node.children.length - 1
+            @previous_node = child
           end
+          @previous_node = nil
         end
       when :or, :and
         possible_output = capture do
@@ -299,6 +309,7 @@ module Prettyrb
           write possible_output
         end
       when :def
+        newline unless @previous_node&.type.nil?
         write "def "
         write node.children[0].to_s
         if node.children[1].children.length > 0

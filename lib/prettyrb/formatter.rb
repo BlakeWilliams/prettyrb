@@ -10,7 +10,7 @@ module Prettyrb
     end
 
     def format
-      root_node, comments = Parser::CurrentRuby.parse_with_comments(@code)
+      root_node, _comments = Parser::CurrentRuby.parse_with_comments(@code)
 
       visitor = Visitor.new
       visitor.visit(root_node)

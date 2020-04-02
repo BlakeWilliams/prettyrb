@@ -5,6 +5,49 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_adds_newlines_to_class
+    source = <<~RUBY
+    require 'foo'
+    require 'bar'
+
+    class Foo
+      FOO = 1
+      BAR = 2
+
+      def hello
+        a = 1
+        b = 2
+
+        if a != b
+          1
+        end
+      end
+    end
+    RUBY
+    result = Prettyrb::Formatter.new(source).format
+
+    expected = <<~RUBY
+    require("foo")
+    require("bar")
+
+    class Foo
+      FOO = 1
+      BAR = 2
+
+      def hello
+        a = 1
+        b = 2
+
+        if a != b
+          1
+        end
+      end
+    end
+    RUBY
+
+    assert_equal expected.rstrip, result.rstrip
+  end
+
   def test_breaks_up_long_conditionals
     source = <<~RUBY
     if "hello" != "foo bar baz" && "foo" != "hello world" && "wow" != "okay this might be long" && "wow this is really really long" != "okay"
