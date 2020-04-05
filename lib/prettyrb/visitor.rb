@@ -545,8 +545,9 @@ module Prettyrb
         write "*"
         visit node.children[0], node
       when :defined?
-        write "defined?"
-        visit node.children[0]
+        write "defined?("
+        visit node.children[0], node
+        write ")"
       when :complex,
         :dsym,
         :xstr,

@@ -186,7 +186,7 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
-  def test_splat
+  def test_defined
     source = <<~RUBY
     defined?(a)
     RUBY
