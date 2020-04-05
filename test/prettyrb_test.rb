@@ -5,6 +5,61 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_long_multi_when
+    source = <<~RUBY
+    a = 1
+    case a
+    when :hello, :hello, :hello, :hello, :hello, :hello, :hello, :hello, :hello, :hello, :hello, :hello, :hello, :hello, :hello
+      puts "hello"
+    end
+    RUBY
+
+    expected = <<~RUBY
+    a = 1
+    case a
+    when
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello,
+      :hello
+      puts("hello")
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_multi_when
+    source = <<~RUBY
+    a = 1
+    case a
+    when 1, 2
+      puts "hello"
+    end
+    RUBY
+
+    expected = <<~RUBY
+    a = 1
+    case a
+    when 1, 2
+      puts("hello")
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_unless
     source = <<~RUBY
     puts 'hello' unless false

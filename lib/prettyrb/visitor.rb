@@ -11,6 +11,7 @@ module Prettyrb
       @newline = true
       @multiline_conditional_level = 0
       @previous_node = nil
+      @current_line = ''
     end
 
     def indents
@@ -62,14 +63,17 @@ module Prettyrb
     def newline
       @output << "\n"
       @newline = true
+      @current_line = ''
     end
 
     def write(input)
       if @newline
         @output << indents
+        @current_line << indents
       end
       @newline = false
       @output << input
+      @current_line << input
     end
 
     def visit(node, parent_node)
@@ -367,12 +371,20 @@ module Prettyrb
       when :self
         "self"
       when :sym
-        if parent_node&.type == :pair
-          write node.children[0].to_s
-          write ": "
-        else
+        content = node.children[0].to_s
+
+        if content.match?(/-/)
+          content = "'#{content}'"
           write ":"
-          write node.children[0].to_s
+          write content
+        else
+          if parent_node&.type == :pair
+            write content
+            write ": "
+          else
+            write ":"
+            write content
+          end
         end
       when :return
         write "return"
@@ -389,7 +401,7 @@ module Prettyrb
         visit node.children[0], node
         newline
         node.children[1..-1].each do |child|
-          if child.type != :when
+          if child && child.type != :when
             write "else"
             newline
 
@@ -397,17 +409,40 @@ module Prettyrb
               visit child, node
             end
           else
-            visit child, node
-            newline
+            if child
+              visit child, node
+              newline
+            end
           end
         end
         write "end"
+      when :regexp
+        write '/'
+        node.children[0...-1].map do |child_node|
+          if child_node.type == :str
+            write child_node.children[0].to_s
+          else
+            visit child_node, node
+          end
+        end
+        write '/'
+        visit node.children[-1], node
+      when :regopt
+        node.children.map { |child| child.to_s }.join('')
       when :when
-        write "when "
-        visit node.children[0], node
+        write "when"
+
+        indent do
+          splittable_separated_map(node, node.children[0..-2], skip_last_multiline_separator: true)
+          # node.children[0...-1].each_with_index do |child_node, index|
+          #   visit child_node, node
+          #   write ', ' unless index == node.children.length - 2
+          # end
+        end
+
         newline
         indent do
-          visit node.children[1], node
+          visit node.children[-1], node
         end
       when :or_asgn, :and_asgn
         newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
@@ -433,6 +468,7 @@ module Prettyrb
       when :ivar
         write node.children[0].to_s
       when :blockarg
+        write '&'
         write node.children[0].to_s
       when :yield
         newline unless @previous_node.nil?
@@ -559,9 +595,30 @@ module Prettyrb
       content = raw_content[1...-1]
 
       if raw_content[0] == "'"
-        content.gsub('"', '\"').gsub('#{', '\#{')
+        content.gsub('"', '\\"').gsub('#{', '\\#{')
+        # content.gsub("\\", "\\\\").gsub('"', '\\"').gsub('#{', '\#{')
       else
         content.gsub("\\", "\\\\")
+      end
+    end
+
+    def splittable_separated_map(current_node, mappable, separator: ", ", skip_last_multiline_separator: false)
+      one_line = capture do
+        mappable.each_with_index do |child_node, index|
+          visit child_node, current_node
+          write separator unless index == mappable.length - 1
+        end
+      end
+
+      if @current_line.length + one_line.length > MAX_LENGTH
+        mappable.each_with_index do |child_node, index|
+          newline
+          visit child_node, current_node
+          write separator.rstrip unless skip_last_multiline_separator && index == mappable.length - 1
+        end
+      else
+        write ' '
+        write one_line
       end
     end
   end
