@@ -485,17 +485,21 @@ module Prettyrb
         write "..."
         visit node.children[1], node unless node.children[1].nil?
       when :hash
-        write "{"
-
-        result = indent do
-          splittable_separated_map(node, node.children, write_space_if_single_line: true)
-        end
-
-        if result == MULTI_LINE
-          newline
-          write "}"
+        if node.children.length == 0
+          write "{}"
         else
-          write " }"
+          write "{"
+
+          result = indent do
+            splittable_separated_map(node, node.children, write_space_if_single_line: true)
+          end
+
+          if result == MULTI_LINE
+            newline
+            write "}"
+          else
+            write " }"
+          end
         end
       when :pair
         visit node.children[0], node
@@ -512,8 +516,6 @@ module Prettyrb
       when :complex,
         :dsym,
         :xstr,
-        :regopt,
-        :kwsplat,
         :'nth-ref',
         :'back-ref',
         :gvasgn,
@@ -550,6 +552,9 @@ module Prettyrb
         write node.children[0].to_s
         write " = "
         visit node.children[1], node
+      when :kwsplat
+        write "**"
+        visit node.children[0], node
       when :kwarg
         write node.children[0].to_s
         write ":"

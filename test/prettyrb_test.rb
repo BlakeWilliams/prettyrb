@@ -5,6 +5,20 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_kw_splat
+    source = <<~RUBY
+    b = {}
+    { a: 1, **b }
+    RUBY
+
+    expected = <<~RUBY
+    b = {}
+    { a: 1, **b }
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_long_hash
     source = <<~RUBY
     { foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1 }
