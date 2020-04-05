@@ -4,6 +4,35 @@ module Prettyrb
     SINGLE_LINE = "single_line"
     MULTI_LINE = "multi_line"
 
+    FNAMES = [
+      "..",
+      "|",
+      "ˆ",
+      "&",
+      "<=>",
+      "==",
+      "===",
+      "=˜",
+      ">",
+      ">=",
+      "<",
+      "<=",
+      "+",
+      "-",
+      "*",
+      "/",
+      "%",
+      "**",
+      "<<",
+      ">>",
+      "~",
+      "+@",
+      "-@",
+      "[]",
+      "[]="
+    ]
+    VALID_SYMBOLS = FNAMES + ["!", "!="]
+
     attr_reader :output
 
     def initialize
@@ -361,7 +390,8 @@ module Prettyrb
       when :sym
         content = node.children[0].to_s
 
-        if content.match?(/-/)
+        # TODO handle already quoted symbols
+        if !VALID_SYMBOLS.include?(content) && !content.match?(/\A[a-zA-Z_]{1}[a-zA-Z0-9_!?]*\z/)
           content = "'#{content}'"
           write ":"
           write content
@@ -558,7 +588,7 @@ module Prettyrb
       when :kwarg
         write node.children[0].to_s
         write ":"
-      when :forward_args, :forwarded_args, :'forward-args'
+      when :forward_args, :forwarded_args
         write "..."
       when :kwoptarg
         write node.children[0].to_s
