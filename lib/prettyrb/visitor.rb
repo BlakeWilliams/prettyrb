@@ -52,7 +52,9 @@ module Prettyrb
     def capture(&block)
       old_newline = @newline
       old_output = @output
+      old_current_line = @current_line
 
+      @current_line = ""
       @output = ""
 
       yield
@@ -60,6 +62,7 @@ module Prettyrb
       @output.tap do |output|
         @output = old_output
         @newline = old_newline
+        @current_line = old_current_line
       end
     end
 
@@ -243,31 +246,12 @@ module Prettyrb
         if node.children[0].type == :splat
           visit node.children[0], node
         else
-          possible_output = capture do
-            write "["
-            node.children.each_with_index do |child, index|
-              visit child, node
-              write ", " unless index == node.children.length - 1
-            end
-            write "]"
+          write "["
+          indent do
+            result = splittable_separated_map(node, node.children)
+            newline if result == MULTI_LINE
           end
-
-          if possible_output.length > MAX_LENGTH
-            write "["
-            newline
-
-            indent do
-              node.children.map do |child|
-                visit child, node
-                write ","
-                newline
-              end
-            end
-
-            write "]"
-          else
-            write possible_output.lstrip
-          end
+          write "]"
         end
       when :str
         write '"'
