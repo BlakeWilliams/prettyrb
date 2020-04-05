@@ -5,6 +5,66 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_and_asgn
+    source = <<~RUBY
+    a &&= 1
+    RUBY
+
+    expected = <<~RUBY
+    a &&= 1
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_splat
+    source = <<~RUBY
+    defined?(a)
+    RUBY
+
+    expected = <<~RUBY
+    defined?(a)
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_splat
+    source = <<~RUBY
+    a =  *c
+    RUBY
+
+    expected = <<~RUBY
+    a = *c
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_hash_symbol
+    source = <<~RUBY
+    {rad: 1}
+    RUBY
+
+    expected = <<~RUBY
+    { rad: 1 }
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_hash_rocket
+    source = <<~RUBY
+    {:rad =>1, "radder" =>2}
+    RUBY
+
+    expected = <<~RUBY
+    { rad: 1, "radder" => 2 }
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_sclass
     source = <<~RUBY
     a = 1

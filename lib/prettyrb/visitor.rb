@@ -219,30 +219,34 @@ module Prettyrb
       when :int, :float
         write node.children[0].to_s
       when :array
-        possible_output = capture do
-          write "["
-          node.children.each_with_index do |child, index|
-            visit child, node
-            write ", " unless index == node.children.length - 1
-          end
-          write "]"
-        end
-
-        if possible_output.length > MAX_LENGTH
-          write "["
-          newline
-
-          indent do
-            node.children.map do |child|
-              visit child, node
-              write ","
-              newline
-            end
-          end
-
-          write "]"
+        if node.children[0].type == :splat
+          visit node.children[0], node
         else
-          write possible_output.lstrip
+          possible_output = capture do
+            write "["
+            node.children.each_with_index do |child, index|
+              visit child, node
+              write ", " unless index == node.children.length - 1
+            end
+            write "]"
+          end
+
+          if possible_output.length > MAX_LENGTH
+            write "["
+            newline
+
+            indent do
+              node.children.map do |child|
+                visit child, node
+                write ","
+                newline
+              end
+            end
+
+            write "]"
+          else
+            write possible_output.lstrip
+          end
         end
       when :str
         write '"'
@@ -350,8 +354,13 @@ module Prettyrb
       when :self
         "self"
       when :sym
-        write ":"
-        write node.children[0].to_s
+        if parent_node&.type == :pair
+          write node.children[0].to_s
+          write ": "
+        else
+          write ":"
+          write node.children[0].to_s
+        end
       when :return
         write "return"
 
@@ -387,10 +396,14 @@ module Prettyrb
         indent do
           visit node.children[1], node
         end
-      when :or_asgn
+      when :or_asgn, :and_asgn
         newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
         visit node.children[0], node
-        write " ||= " # TODO handle long lines here too
+        if node.type == :or_asgn
+          write " ||= " # TODO handle long lines here too
+        elsif node.type == :and_asgn
+          write " &&= " # TODO handle long lines here too
+        end
         visit node.children[1], node
       when :ivasgn
         newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
@@ -422,9 +435,10 @@ module Prettyrb
       when :lvasgn
         newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
         write node.children[0].to_s
-        write " = "
-
-        visit node.children[1], node
+        if node.children[1]
+          write " = "
+          visit node.children[1], node
+        end
       when :irange
         visit node.children[0], node unless node.children[0].nil?
         write ".."
@@ -433,20 +447,35 @@ module Prettyrb
         visit node.children[0], node unless node.children[0].nil?
         write "..."
         visit node.children[1], node unless node.children[1].nil?
+      when :hash
+        write "{ "
+        # TODO support multiline
+        node.children.each_with_index do |child_node, index|
+          visit child_node, node
+          write ", " unless index == node.children.length - 1
+        end
+        write " }"
+      when :pair
+        visit node.children[0], node
+        if node.children[0].type != :sym
+          write " => "
+        end
+        visit node.children[1], node
+      when :splat
+        write "*"
+        visit node.children[0], node
+      when :defined?
+        write "defined?"
+        visit node.children[0]
       when :complex,
         :dsym,
         :xstr,
         :regopt,
-        :splat,
-        :pair,
         :kwsplat,
-        :hash,
         :'nth-ref',
         :'back-ref',
-        :defined?,
         :gvasgn,
         :mlhs,
-        :and_asgn,
         :procarg0,
         :shadowarg
         raise "implement me, #{node.inspect}"
