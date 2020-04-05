@@ -150,20 +150,6 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
-  def test_nil_keyword_arg
-    source = <<~RUBY
-      def foo(**nil)
-      end
-    RUBY
-
-    expected = <<~RUBY
-      def foo(**nil)
-      end
-    RUBY
-
-    assert_code_formatted(expected, source)
-  end
-
   if RUBY_VERSION.to_f >= 2.7
     def test_forward_args
       source = <<~RUBY
@@ -175,6 +161,20 @@ class PrettyrbTest < Minitest::Test
       expected = <<~RUBY
       def foo(...)
         bar(...)
+      end
+      RUBY
+
+      assert_code_formatted(expected, source)
+    end
+
+    def test_nil_keyword_arg
+      source = <<~RUBY
+      def foo(**nil)
+      end
+      RUBY
+
+      expected = <<~RUBY
+      def foo(**nil)
       end
       RUBY
 
