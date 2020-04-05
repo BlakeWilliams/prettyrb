@@ -5,6 +5,183 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_sclass
+    source = <<~RUBY
+    a = 1
+
+    class << a
+      puts "foo"
+    end
+    RUBY
+
+    expected = <<~RUBY
+    a = 1
+    class << a
+      puts("foo")
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_defs
+    source = <<~RUBY
+    class Hello
+      def self.wow
+      end
+    end
+    RUBY
+
+    expected = <<~RUBY
+    class Hello
+      def self.wow
+      end
+    end
+    RUBY
+
+    assert_code_formatted(expected, source, skip_rstrip: true)
+  end
+
+  def test_undef
+    source = <<~RUBY
+    undef :foo, :bar, :baz
+    RUBY
+
+    expected = <<~RUBY
+    undef :foo, :bar, :baz
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_alias
+    source = <<~RUBY
+    alias shout puts
+    RUBY
+
+    expected = <<~RUBY
+    alias :shout :puts
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_hash_kw
+    source = <<~RUBY
+      def foo(** rest)
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def foo(**rest)
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_restarg
+    source = <<~RUBY
+      def foo(* rest)
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def foo(*rest)
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_optarg
+    source = <<~RUBY
+      def foo(bar=1)
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def foo(bar = 1)
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_kwarg
+    source = <<~RUBY
+      def foo(bar:, baz:)
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def foo(bar:, baz:)
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_kw_opt_arg
+    source = <<~RUBY
+      def foo(bar: 1)
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def foo(bar: 1)
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_kw_rest_arg
+    source = <<~RUBY
+      def foo(**)
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def foo(**)
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_nil_keyword_arg
+    source = <<~RUBY
+      def foo(**nil)
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def foo(**nil)
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  if RUBY_VERSION.to_f >= 2.7
+    def test_forward_args
+      source = <<~RUBY
+      def foo(...)
+        bar(...)
+      end
+      RUBY
+
+      expected = <<~RUBY
+      def foo(...)
+        bar(...)
+      end
+      RUBY
+
+      assert_code_formatted(expected, source)
+    end
+  end
+
   def test_adds_newlines_to_class
     source = <<~RUBY
     require 'foo'

@@ -101,7 +101,6 @@ module Prettyrb
         newline
       when :const
         visit node.children[0] if node.children[0]
-        write '::' unless node.children[0].present?
         write node.children[1].to_s
       when :casgn
         write node.children[1].to_s
@@ -150,8 +149,8 @@ module Prettyrb
           arguments = node.children[2..-1]
           if arguments.length > 0
             write "("
-            arguments.each_with_index do |node, index|
-              visit node
+            arguments.each_with_index do |child_node, index|
+              visit child_node, node
               write ", " unless index == arguments.length - 1
             end
             write ")"
@@ -281,6 +280,7 @@ module Prettyrb
           @previous_node = nil
         end
       when :or, :and
+        write "(" if parent_node&.type == :begin
         possible_output = capture do
           visit node.children[0], node
           if node.type == :or
@@ -290,8 +290,6 @@ module Prettyrb
           end
           visit node.children[1], node
         end
-
-
         if @multiline_conditional_level > 0 # TODO track and check currently level
           write_multiline_conditional(node)
         elsif possible_output.length > MAX_LENGTH
@@ -307,20 +305,33 @@ module Prettyrb
         else
           write possible_output
         end
-      when :def
+        write ")" if parent_node&.type == :begin
+      when :def, :defs
         newline unless @previous_node&.type.nil?
-        write "def "
-        write node.children[0].to_s
-        if node.children[1].children.length > 0
+        if node.type == :defs
+          write "def self."
+          method_name_node = node.children[1]
+          arguments_node = node.children[2]
+          body_node = node.children[3]
+        else
+          write "def "
+          method_name_node = node.children[0]
+          arguments_node = node.children[1]
+          body_node = node.children[2]
+        end
+
+        write method_name_node.to_s
+
+        if arguments_node.children.length > 0 || arguments_node.type != :args
           write "("
-          visit node.children[1], node
+          visit arguments_node, node
           write ")"
         end
         newline
 
-        if node.children[2]
+        if body_node
           indent do
-            visit node.children[2], node if node.children[2]
+            visit body_node, node
           end
 
           newline
@@ -409,7 +420,7 @@ module Prettyrb
         write " "
         visit node.children[2], node
       when :lvasgn
-        newline if @previous_node && [:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
+        newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
         write node.children[0].to_s
         write " = "
 
@@ -417,7 +428,71 @@ module Prettyrb
       when :irange
         visit node.children[0], node unless node.children[0].nil?
         write ".."
-        visit node.children[1]
+        visit node.children[1], node unless node.children[1].nil?
+      when :erange
+        visit node.children[0], node unless node.children[0].nil?
+        write "..."
+        visit node.children[1], node unless node.children[1].nil?
+      when :complex,
+        :dsym,
+        :xstr,
+        :regopt,
+        :splat,
+        :pair,
+        :kwsplat,
+        :hash,
+        :'nth-ref',
+        :'back-ref',
+        :defined?,
+        :gvasgn,
+        :mlhs,
+        :and_asgn,
+        :procarg0,
+        :shadowarg
+        raise "implement me, #{node.inspect}"
+      when :sclass
+        write "class << "
+        visit node.children[0], node
+        newline
+
+        indent do
+          visit node.children[1], node if node.children[1]
+        end
+
+        newline if node.children[1]
+        write "end"
+      when :undef
+        write "undef "
+        node.children.each_with_index do |child_node, index|
+          visit child_node, node
+          write ", " unless index == node.children.length - 1
+        end
+      when :alias
+        write 'alias '
+        visit node.children[0], node
+        write ' '
+        visit node.children[1], node
+      when :restarg
+        write "*"
+        write node.children[0].to_s
+      when :optarg
+        write node.children[0].to_s
+        write " = "
+        visit node.children[1], node
+      when :kwarg
+        write node.children[0].to_s
+        write ":"
+      when :forward_args, :forwarded_args, :'forward-args'
+        write "..."
+      when :kwoptarg
+        write node.children[0].to_s
+        write ": "
+        visit node.children[1], node
+      when :kwrestarg
+        write "**"
+        write node.children[0].to_s if node.children[0]
+      when :kwnilarg
+        write "**nil"
       else
         raise "unhandled node type `#{node.type}`\nnode: #{node}"
       end

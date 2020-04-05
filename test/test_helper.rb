@@ -3,6 +3,11 @@ require "prettyrb"
 
 require "minitest/autorun"
 
-def parse_source(source)
-  Parser::CurrentRuby.parse_with_comments(source)[0]
+def assert_code_formatted(expected, source, skip_rstrip: false)
+  result = Prettyrb::Formatter.new(source).format
+  if skip_rstrip
+    assert_equal expected, result, result
+  else
+    assert_equal expected.rstrip, result, result
+  end
 end
