@@ -5,6 +5,34 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_long_function_call
+    source = <<~RUBY
+    add :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value
+    RUBY
+
+    expected = <<~RUBY
+    add(
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+    )
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_long_multi_when
     source = <<~RUBY
     a = 1

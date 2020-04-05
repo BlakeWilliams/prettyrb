@@ -1,6 +1,8 @@
 module Prettyrb
   class Visitor
     MAX_LENGTH = 100
+    SINGLE_LINE = "single_line"
+    MULTI_LINE = "multi_line"
 
     attr_reader :output
 
@@ -30,8 +32,9 @@ module Prettyrb
       old_indent_level = @indent_level
 
       @indent_level += 1
-      yield
+      value = yield
       @indent_level = old_indent_level
+      value
     end
 
     def multiline_conditional_level
@@ -153,9 +156,10 @@ module Prettyrb
           arguments = node.children[2..-1]
           if arguments.length > 0
             write "("
-            arguments.each_with_index do |child_node, index|
-              visit child_node, node
-              write ", " unless index == arguments.length - 1
+            indent do
+              if splittable_separated_map(node, arguments) == MULTI_LINE
+                newline
+              end
             end
             write ")"
           end
@@ -433,7 +437,7 @@ module Prettyrb
         write "when"
 
         indent do
-          splittable_separated_map(node, node.children[0..-2], skip_last_multiline_separator: true)
+          splittable_separated_map(node, node.children[0..-2], skip_last_multiline_separator: true, write_space_if_single_line: true)
           # node.children[0...-1].each_with_index do |child_node, index|
           #   visit child_node, node
           #   write ', ' unless index == node.children.length - 2
@@ -602,7 +606,7 @@ module Prettyrb
       end
     end
 
-    def splittable_separated_map(current_node, mappable, separator: ", ", skip_last_multiline_separator: false)
+    def splittable_separated_map(current_node, mappable, separator: ", ", skip_last_multiline_separator: false, write_space_if_single_line: false)
       one_line = capture do
         mappable.each_with_index do |child_node, index|
           visit child_node, current_node
@@ -616,9 +620,11 @@ module Prettyrb
           visit child_node, current_node
           write separator.rstrip unless skip_last_multiline_separator && index == mappable.length - 1
         end
+        MULTI_LINE
       else
-        write ' '
+        write ' ' if write_space_if_single_line
         write one_line
+        SINGLE_LINE
       end
     end
   end
