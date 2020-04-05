@@ -485,13 +485,18 @@ module Prettyrb
         write "..."
         visit node.children[1], node unless node.children[1].nil?
       when :hash
-        write "{ "
-        # TODO support multiline
-        node.children.each_with_index do |child_node, index|
-          visit child_node, node
-          write ", " unless index == node.children.length - 1
+        write "{"
+
+        result = indent do
+          splittable_separated_map(node, node.children, write_space_if_single_line: true)
         end
-        write " }"
+
+        if result == MULTI_LINE
+          newline
+          write "}"
+        else
+          write " }"
+        end
       when :pair
         visit node.children[0], node
         if node.children[0].type != :sym

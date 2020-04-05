@@ -5,6 +5,34 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_long_hash
+    source = <<~RUBY
+    { foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1, foo: 1 }
+    RUBY
+
+    expected = <<~RUBY
+    {
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+      foo: 1,
+    }
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_long_function_call_array
     source = <<~RUBY
     add [:value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value, :value]
