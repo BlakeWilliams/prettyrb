@@ -59,10 +59,13 @@ module Prettyrb
 
     def indent(&block)
       old_indent_level = @indent_level
+      old_previous_node = @previous_node
 
+      @previous_node = nil
       @indent_level += 1
       value = yield
       @indent_level = old_indent_level
+      @previous_node = old_previous_node
       value
     end
 
@@ -166,22 +169,8 @@ module Prettyrb
 
         write "end"
       when :send
-        # newline if @previous_node && @previous&.type != :send
-        if [:!=, :==, :+, :-, :*, :/, :<<].include?(node.children[1])
-          visit node.children[0], node
-          write " "
-          write node.children[1].to_s
-          write " "
-          visit node.children[2], node
-        elsif node.children[1] == :[]
-          visit node.children[0], node
-          write "["
-          visit node.children[2], node
-          write "]"
-        elsif node.children[1] == :!
-          write "!"
-          visit node.children[0], node
-        elsif node.children[0] == nil
+        newline if parent_node&.type == :begin && @previous_node && @previous_node&.type != :send
+        if node.children[0] == nil
           write node.children[1].to_s
 
           # TODO possible > MAX via `capture`
@@ -197,6 +186,21 @@ module Prettyrb
           end
 
           newline if @previous_node&.type == :class 
+        elsif node.children[1] == :[]
+          visit node.children[0], node
+          write "["
+          visit node.children[2], node
+          write "]"
+        elsif node.children[1] == :!
+          write "!"
+          visit node.children[0], node
+        elsif !node.children[1].to_s.match?(/[a-zA-Z]/)
+        # if [:!=, :==, :+, :-, :*, :/, :<<, :<].include?(node.children[1])
+          visit node.children[0], node
+          write " "
+          write node.children[1].to_s
+          write " "
+          visit node.children[2], node
         else
           visit node.children[0], node
           write "."
@@ -489,7 +493,7 @@ module Prettyrb
         write '&'
         write node.children[0].to_s
       when :yield
-        newline unless @previous_node.nil?
+        newline unless @previous_node.nil? || [:op_asgn, :lvasgn, :or_asgn, :and_asgn].include?(@previous_node.type)
         write "yield"
       when :op_asgn
         newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
@@ -624,7 +628,6 @@ module Prettyrb
 
       if raw_content[0] == "'"
         content.gsub('"', '\\"').gsub('#{', '\\#{')
-        # content.gsub("\\", "\\\\").gsub('"', '\\"').gsub('#{', '\#{')
       else
         content.gsub("\\", "\\\\")
       end
