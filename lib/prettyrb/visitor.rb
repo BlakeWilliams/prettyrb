@@ -72,18 +72,15 @@ module Prettyrb
       @output << input
     end
 
-    def visit(node)
-      @previous_node = @__current_node
-      @__current_node = node
-
+    def visit(node, parent_node)
       case node.type
       when :module
         write "module "
-        visit node.children[0]
+        visit node.children[0], node
         newline
 
         indent do
-          visit node.children[1]
+          visit node.children[1], node
         end
 
         write "end"
@@ -91,58 +88,61 @@ module Prettyrb
       when :class
         newline unless @previous_node.nil?
         write "class "
-        visit node.children[0]
+        visit node.children[0], node
         newline
         # TODO handle children[1] which is inheritance
 
         indent do
-          visit node.children[2]
+          visit node.children[2], node
         end
 
         newline unless @output.end_with?("\n")
         write "end"
         newline
       when :const
+        visit node.children[0] if node.children[0]
+        write '::' unless node.children[0].present?
         write node.children[1].to_s
       when :casgn
         write node.children[1].to_s
         write " = "
-        visit node.children[2]
+        visit node.children[2], node
       when :block
-        visit node.children[0]
+        newline unless @previous_node.nil?
+        visit node.children[0], node
         write " do"
 
         if node.children[1].children.length > 0
           write " |"
-          visit node.children[1]
+          visit node.children[1], node
           write "|"
         end
 
         newline
 
         indent do
-          visit node.children[2]
+          visit node.children[2], node
         end
 
         newline
 
         write "end"
-        newline
       when :send
+        # newline if @previous_node && @previous&.type != :send
         if [:!=, :==, :+, :-, :*, :/, :<<].include?(node.children[1])
-          visit node.children[0]
+          visit node.children[0], node
           write " "
           write node.children[1].to_s
           write " "
-          visit node.children[2]
+          visit node.children[2], node
         elsif node.children[1] == :[]
-          visit node.children[0]
+          visit node.children[0], node
           write "["
-          visit node.children[2]
+          visit node.children[2], node
           write "]"
         elsif node.children[1] == :!
           write "!"
-          visit node.children[0]
+          visit node.children[0], node
         elsif node.children[0] == nil
           write node.children[1].to_s
 
@@ -159,7 +159,7 @@ module Prettyrb
 
           newline if @previous_node&.type == :class 
         else
-          visit node.children[0]
+          visit node.children[0], node
           write "."
           write node.children[1].to_s
 
@@ -167,8 +167,8 @@ module Prettyrb
           arguments = node.children[2..-1]
           if arguments.length > 0
             write "("
-            arguments.each_with_index do |node, index|
-              visit node
+            arguments.each_with_index do |child_node, index|
+              visit child_node, node
               write ", " unless index == arguments.length - 1
             end
             write ")"
@@ -176,10 +176,10 @@ module Prettyrb
         end
       when :if
         newline unless @previous_node.nil?
-        write "if"
+        write "if" unless parent_node&.type == :if
         indent do
           conditions = capture do
-            visit node.children[0]
+            visit node.children[0], node
           end
 
           if !conditions.start_with?("\n")
@@ -190,40 +190,40 @@ module Prettyrb
           newline
 
           if node.children[1]
-            visit node.children[1]
+            visit node.children[1], node
             newline
           end
         end
 
         if node.children[2]
-          if node.children[2] == :if
+          if node.children[2].type == :if
             write "elsif"
-            visit node.children[2]
+            visit node.children[2], node
           else
             write "else"
             newline
 
             indent do
-              visit node.children[2]
+              visit node.children[2], node
             end
           end
           newline
         end
 
-        write "end"
+        write "end" unless parent_node&.type == :if
       when :true
         write "true"
       when :false
         write "false"
       when :nil
         write "nil"
-      when :int
+      when :int, :float
         write node.children[0].to_s
       when :array
         possible_output = capture do
           write "["
           node.children.each_with_index do |child, index|
-            visit(child)
+            visit child, node
             write ", " unless index == node.children.length - 1
           end
           write "]"
@@ -235,7 +235,7 @@ module Prettyrb
 
           indent do
             node.children.map do |child|
-              visit(child)
+              visit child, node
               write ","
               newline
             end
@@ -247,17 +247,16 @@ module Prettyrb
         end
       when :str
         write '"'
-        write node.children[0].gsub("\n", "\\n")
+        write format_string(node)
         write '"'
       when :dstr
         write "\""
         node.children.map do |child|
           if child.type == :str
-            write child.children[0]
-            write child.children[0].gsub("\n", "\\n")
+            write child.children[0] # TODO better handling
           else
             write '#{'
-            visit child
+            visit child, node
             write '}'
           end
         end
@@ -267,7 +266,7 @@ module Prettyrb
           write "("
           @previous_node = nil
           node.children.map do |child|
-            visit child
+            visit child, node
             @previous_node = child
           end
           @previous_node = nil
@@ -275,7 +274,7 @@ module Prettyrb
         else
           @previous_node = nil
           node.children.each_with_index do |child, index|
-            visit child
+            visit child, node
             newline unless index == node.children.length - 1
             @previous_node = child
           end
@@ -283,13 +282,13 @@ module Prettyrb
         end
       when :or, :and
         possible_output = capture do
-          visit node.children[0]
+          visit node.children[0], node
           if node.type == :or
             write " || "
           elsif node.type == :and
             write " && "
           end
-          visit node.children[1]
+          visit node.children[1], node
         end
 
 
@@ -314,25 +313,28 @@ module Prettyrb
         write node.children[0].to_s
         if node.children[1].children.length > 0
           write "("
-          visit node.children[1]
+          visit node.children[1], node
           write ")"
         end
         newline
 
-        indent do
-          visit node.children[2]
+        if node.children[2]
+          indent do
+            visit node.children[2], node if node.children[2]
+          end
+
+          newline
         end
 
-        newline
         write "end"
       when :args
         node.children.each_with_index do |child, index|
-          visit child
+          visit child, node
           write ", " unless index == node.children.length - 1
         end
       when :arg
         write node.children[0].to_s
-      when :lvar
+      when :lvar, :gvar
         write node.children[0].to_s
       when :self
         "self"
@@ -343,7 +345,7 @@ module Prettyrb
         write "return"
 
         possible_output = capture do
-          visit node.children[0]
+          visit node.children[0], node
         end
 
         if !possible_output.start_with?("\n")
@@ -351,7 +353,7 @@ module Prettyrb
         end
       when :case
         write "case "
-        visit node.children[0]
+        visit node.children[0], node
         newline
         node.children[1..-1].each do |child|
           if child.type != :when
@@ -359,46 +361,61 @@ module Prettyrb
             newline
 
             indent do
-              visit child
+              visit child, node
             end
           else
-            visit child
+            visit child, node
             newline
           end
         end
         write "end"
       when :when
         write "when "
-        visit node.children[0]
+        visit node.children[0], node
         newline
         indent do
-          visit node.children[1]
+          visit node.children[1], node
         end
       when :or_asgn
-        visit node.children[0]
+        newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
+        visit node.children[0], node
         write " ||= " # TODO handle long lines here too
-        visit node.children[1]
+        visit node.children[1], node
       when :ivasgn
+        newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
         write node.children[0].to_s
+
+        if node.children[1]
+          write " = "
+          visit node.children[1], node
+        end
+      when :csend
+        visit node.children[0], node
+        write "&."
+        write node.children[1].to_s
       when :ivar
         write node.children[0].to_s
       when :blockarg
         write node.children[0].to_s
       when :yield
+        newline unless @previous_node.nil?
         write "yield"
       when :op_asgn
-        visit node.children[0]
+        newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
+        visit node.children[0], node
         write " "
         write node.children[1].to_s
+        write "="
         write " "
-        visit node.children[2]
+        visit node.children[2], node
       when :lvasgn
+        newline if @previous_node && [:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
         write node.children[0].to_s
         write " = "
 
-        visit node.children[1]
+        visit node.children[1], node
       when :irange
-        visit node.children[0]
+        visit node.children[0], node unless node.children[0].nil?
         write ".."
         visit node.children[1]
       else
@@ -407,7 +424,7 @@ module Prettyrb
     end
 
     def write_multiline_conditional(node)
-      visit node.children[0]
+      visit node.children[0], node
 
       if node.type == :or
         write " ||"
@@ -417,7 +434,18 @@ module Prettyrb
 
       newline
 
-      visit node.children[1]
+      visit node.children[1], node
+    end
+
+    def format_string(string)
+      raw_content = string.loc.expression.source
+      content = raw_content[1...-1]
+
+      if raw_content[0] == "'"
+        content.gsub('"', '\"').gsub('#{', '\#{')
+      else
+        content.gsub("\\", "\\\\")
+      end
     end
   end
 end

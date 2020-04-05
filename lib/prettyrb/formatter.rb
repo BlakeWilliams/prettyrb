@@ -13,7 +13,7 @@ module Prettyrb
       root_node, _comments = Parser::CurrentRuby.parse_with_comments(@code)
 
       visitor = Visitor.new
-      visitor.visit(root_node)
+      visitor.visit(root_node, nil)
 
       visitor.output
     end
