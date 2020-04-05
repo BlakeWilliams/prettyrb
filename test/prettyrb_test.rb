@@ -5,6 +5,20 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_unless
+    source = <<~RUBY
+    puts 'hello' unless false
+    RUBY
+
+    expected = <<~RUBY
+    unless false
+      puts("hello")
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_and_asgn
     source = <<~RUBY
     a &&= 1

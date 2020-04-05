@@ -175,7 +175,20 @@ module Prettyrb
         end
       when :if
         newline unless @previous_node.nil?
-        write "if" unless parent_node&.type == :if
+
+        is_unless = node.children[1].nil?
+        conditions = node.children[0]
+
+        if is_unless
+          write "unless"
+          body_node = node.children[2]
+          else_body_node = nil
+        else
+          write "if" unless parent_node&.type == :if
+          body_node = node.children[1]
+          else_body_node = node.children[2]
+        end
+
         indent do
           conditions = capture do
             visit node.children[0], node
@@ -184,26 +197,26 @@ module Prettyrb
           if !conditions.start_with?("\n")
             write(" ")
           end
-          write conditions
 
+          write conditions
           newline
 
-          if node.children[1]
-            visit node.children[1], node
+          if body_node
+            visit body_node, node
             newline
           end
         end
 
-        if node.children[2]
-          if node.children[2].type == :if
+        if else_body_node
+          if else_body_node.type == :if
             write "elsif"
-            visit node.children[2], node
+            visit else_body_node, node
           else
             write "else"
             newline
 
             indent do
-              visit node.children[2], node
+              visit else_body_node, node
             end
           end
           newline
