@@ -2,9 +2,6 @@ module Prettyrb
   MAX_LINE_LENGTH = 100
 
   class Formatter
-    def self.for(node)
-    end
-
     def initialize(code)
       @code = code
     end
