@@ -142,7 +142,7 @@ module Prettyrb
         write "end"
         newline
       when :const
-        visit node.children[0] if node.children[0]
+        visit node.children[0], node if node.children[0]
         write node.children[1].to_s
       when :casgn
         write node.children[1].to_s
@@ -638,6 +638,8 @@ module Prettyrb
         write node.children[0].to_s if node.children[0]
       when :kwnilarg
         write "**nil"
+      when :cbase
+        write "::"
       else
         raise "unhandled node type `#{node.type}`\nnode: #{node}"
       end

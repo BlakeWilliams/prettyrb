@@ -5,6 +5,20 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_const_cbase
+    source = <<~RUBY
+    require "file"
+    ::File.new
+    RUBY
+
+    expected = <<~RUBY
+    require("file")
+    ::File.new
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_elsif
     source = <<~RUBY
       if a.present?
