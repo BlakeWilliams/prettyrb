@@ -218,24 +218,17 @@ module Prettyrb
           end
         end
       when :if
-        newline unless @previous_node.nil?
+        newline if @previous_node && parent_node&.type != :if
 
-        is_unless = node.children[1].nil?
-        conditions = node.children[0]
-
-        if is_unless
-          write "unless"
-          body_node = node.children[2]
-          else_body_node = nil
-        else
-          write "if" unless parent_node&.type == :if
+        if parent_node&.type == :if
+          conditions_node = node.children[0]
           body_node = node.children[1]
           else_body_node = node.children[2]
-        end
 
-        indent do
+          write "elsif"
+
           conditions = capture do
-            visit node.children[0], node
+            visit conditions_node, node
           end
 
           if !conditions.start_with?("\n")
@@ -245,28 +238,73 @@ module Prettyrb
           write conditions
           newline
 
-          if body_node
+          if body_node.type == :if
             visit body_node, node
-            newline
-          end
-        end
-
-        if else_body_node
-          if else_body_node.type == :if
-            write "elsif"
-            visit else_body_node, node
           else
+            indent do
+              visit body_node, node
+            end
+          end
+
+          newline
+
+          if else_body_node&.type == :if
+            visit else_body_node, node
+          elsif else_body_node
             write "else"
             newline
-
             indent do
               visit else_body_node, node
             end
           end
-          newline
-        end
+        else
+          is_unless = node.children[1].nil? && node.children[2]&.type != :if
+          conditions = node.children[0]
 
-        write "end" unless parent_node&.type == :if
+          if is_unless
+            write "unless"
+            body_node = node.children[2]
+            else_body_node = nil
+          else
+            write "if" unless parent_node&.type == :if
+            body_node = node.children[1]
+            else_body_node = node.children[2]
+          end
+
+          indent do
+            conditions = capture do
+              visit node.children[0], node
+            end
+
+            if !conditions.start_with?("\n")
+              write(" ")
+            end
+
+            write conditions
+            newline
+
+            if body_node
+              visit body_node, node
+              newline
+            end
+          end
+
+          if else_body_node
+            if else_body_node.type == :if
+              visit else_body_node, node
+            else
+              write "else"
+              newline
+
+              indent do
+                visit else_body_node, node
+              end
+            end
+            newline
+          end
+
+          write "end" unless parent_node&.type == :if
+        end
       when :true
         write "true"
       when :false
@@ -456,10 +494,6 @@ module Prettyrb
 
         indent do
           splittable_separated_map(node, node.children[0..-2], skip_last_multiline_separator: true, write_space_if_single_line: true)
-          # node.children[0...-1].each_with_index do |child_node, index|
-          #   visit child_node, node
-          #   write ', ' unless index == node.children.length - 2
-          # end
         end
 
         newline

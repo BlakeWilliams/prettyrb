@@ -5,6 +5,38 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_elsif
+    source = <<~RUBY
+      if a.present?
+        true
+      elsif a.values[0] == 2
+        puts 1
+        false
+      elsif b.values[0] == 3
+        puts 2
+        false
+      else
+        nil
+      end
+    RUBY
+
+    expected = <<~RUBY
+      if a.present?
+        true
+      elsif a.values[0] == 2
+        puts(1)
+        false
+      elsif b.values[0] == 3
+        puts(2)
+        false
+      else
+        nil
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_kw_splat
     source = <<~RUBY
     b = {}
