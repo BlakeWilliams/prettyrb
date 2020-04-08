@@ -5,6 +5,123 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_ensure
+    source = <<~RUBY
+    begin
+      false
+    ensure
+      true
+    end
+    RUBY
+
+    expected = <<~RUBY
+    begin
+      false
+    ensure
+      true
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_begin
+    source = <<~RUBY
+    begin
+      false
+    end
+    RUBY
+
+    expected = <<~RUBY
+    begin
+      false
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+
+  def test_begin_rescue
+    source = <<~RUBY
+    begin
+      false
+    rescue Exception => e
+      true
+    end
+    RUBY
+
+    expected = <<~RUBY
+    begin
+      false
+    rescue Exception => e
+      true
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_nth_ref
+    source = <<~RUBY
+    $1
+    RUBY
+
+    expected = <<~RUBY
+    $1
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_negation
+    source = <<~RUBY
+    -foo
+    RUBY
+
+    expected = <<~RUBY
+    -foo
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_mass_assign_grouped
+    source = <<~RUBY
+    a, b, (c, d) = [1, 2, [3, 4]]
+    RUBY
+
+    expected = <<~RUBY
+    a, b, (c, d) = [1, 2, [3, 4]]
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_mass_assign
+    source = <<~RUBY
+    a, b, c = [1, 2]
+    RUBY
+
+    expected = <<~RUBY
+    a, b, c = [1, 2]
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_block_arg
+    source = <<~RUBY
+    [1,2,3].map(&:ord)
+    RUBY
+
+    expected = <<~RUBY
+    [1, 2, 3].map(&:ord)
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_const_cbase
     source = <<~RUBY
     require "file"

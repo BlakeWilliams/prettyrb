@@ -135,7 +135,7 @@ module Prettyrb
         # TODO handle children[1] which is inheritance
 
         indent do
-          visit node.children[2], node
+          visit node.children[2], node if node.children[2]
         end
 
         newline unless @output.end_with?("\n")
@@ -194,8 +194,10 @@ module Prettyrb
         elsif node.children[1] == :!
           write "!"
           visit node.children[0], node
+        elsif node.children[1] == :-@ && node.children[2].nil?
+          write "-"
+          visit node.children[0], node
         elsif !node.children[1].to_s.match?(/[a-zA-Z]/)
-        # if [:!=, :==, :+, :-, :*, :/, :<<, :<].include?(node.children[1])
           visit node.children[0], node
           write " "
           write node.children[1].to_s
@@ -238,11 +240,13 @@ module Prettyrb
           write conditions
           newline
 
-          if body_node.type == :if
-            visit body_node, node
-          else
-            indent do
+          if body_node
+            if body_node&.type == :if
               visit body_node, node
+            else
+              indent do
+                visit body_node, node
+              end
             end
           end
 
@@ -313,16 +317,25 @@ module Prettyrb
         write "nil"
       when :int, :float
         write node.children[0].to_s
+      when :next
+        write "next"
+
+        if node.children[0]
+          write " "
+          visit node.children[0], node
+        end
       when :array
-        if node.children[0].type == :splat
+        if node.children[0]&.type == :splat
           visit node.children[0], node
         else
-          write "["
-          indent do
-            result = splittable_separated_map(node, node.children)
-            newline if result == MULTI_LINE
+          write "[" unless parent_node&.type == :resbody
+          if node.children.length > 0
+            indent do
+              result = splittable_separated_map(node, node.children)
+              newline if result == MULTI_LINE
+            end
           end
-          write "]"
+          write "]" unless parent_node&.type == :resbody
         end
       when :str
         write '"'
@@ -449,12 +462,14 @@ module Prettyrb
       when :return
         write "return"
 
-        possible_output = capture do
-          visit node.children[0], node
-        end
+        if node.children[0]
+          possible_output = capture do
+            visit node.children[0], node
+          end
 
-        if !possible_output.start_with?("\n")
-          write " "
+          if !possible_output.start_with?("\n")
+            write " "
+          end
         end
       when :case
         write "case "
@@ -588,7 +603,6 @@ module Prettyrb
         :'nth-ref',
         :'back-ref',
         :gvasgn,
-        :mlhs,
         :procarg0,
         :shadowarg
         raise "implement me, #{node.inspect}"
@@ -640,6 +654,72 @@ module Prettyrb
         write "**nil"
       when :cbase
         write "::"
+      when :zsuper
+        write "super"
+      when :nth_ref
+        write "$"
+        write node.children[0].to_s
+      when :masgn
+        left = node.children[0...-1]
+        right = node.children[-1]
+
+        left.each_with_index do |child_node, index|
+          visit child_node, node
+        end
+
+        write " = "
+        visit right, node
+      when :mlhs
+        write "(" if parent_node&.type == :mlhs
+        node.children.each_with_index do |child_node, index|
+          visit child_node, node
+          write ", " unless index == node.children.length - 1
+        end
+        write ")" if parent_node&.type == :mlhs
+      when :block_pass
+        write "&"
+        visit node.children[0], node
+      when :kwbegin
+        write "begin"
+        newline
+        indent do
+          visit node.children[0], node
+        end
+        newline
+        write "end"
+      when :rescue
+        visit node.children[0], node
+        newline
+
+        dedent do
+          write "rescue"
+          visit node.children[1], node
+        end
+      when :resbody
+        if node.children[0]
+          write " "
+          visit node.children[0], node if node.children[0]
+        end
+
+        if node.children[1]
+          write " => "
+          write node.children[1].children[0].to_s
+        end
+        newline
+
+        indent do
+          visit node.children[2], node if node.children[2]
+        end
+      when :ensure
+        visit node.children[0], node if node.children[0]
+        newline
+
+        dedent do
+          write "ensure"
+        end
+
+        newline
+        visit node.children[1], node if node.children[1]
       else
         raise "unhandled node type `#{node.type}`\nnode: #{node}"
       end
