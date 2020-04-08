@@ -287,6 +287,13 @@ module Prettyrb
             write conditions
             newline
 
+            if conditions.start_with?("\n")
+              dedent do
+                write "then"
+              end
+              newline
+            end
+
             if body_node
               visit body_node, node
               newline
@@ -389,11 +396,6 @@ module Prettyrb
           in_multiline_conditional do
             newline
             write_multiline_conditional(node)
-          end
-
-          dedent do
-            newline
-            write "then"
           end
         else
           write possible_output
