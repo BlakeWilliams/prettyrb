@@ -1,7 +1,8 @@
 require "parser/current"
 require "prettyrb/version"
 
-require "prettyrb/node"
+require "prettyrb/nodes/base_node"
+require "prettyrb/nodes/if_node"
 require "prettyrb/builder"
 require "prettyrb/formatter"
 require "prettyrb/visitor"
