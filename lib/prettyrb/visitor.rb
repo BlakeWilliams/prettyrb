@@ -296,12 +296,20 @@ module Prettyrb
         end
       when :str
         if node.heredoc?
+          if node&.parent&.type == :send
+            write "("
+          end
           write "<<"
           write node.heredoc_type if node.heredoc_type
           write node.heredoc_identifier
           newline
           write node.heredoc_body
           write node.heredoc_identifier
+
+          if node&.parent&.type == :send
+            newline
+            write ")"
+          end
         else
           write '"'
           write node.format
