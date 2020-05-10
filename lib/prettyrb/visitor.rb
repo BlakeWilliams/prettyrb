@@ -295,9 +295,18 @@ module Prettyrb
           write "]" unless node.parent&.type == :resbody
         end
       when :str
-        write '"'
-        write format_string(node)
-        write '"'
+        if node.heredoc?
+          write "<<"
+          write node.heredoc_type if node.heredoc_type
+          write node.heredoc_identifier
+          newline
+          write node.heredoc_body
+          write node.heredoc_identifier
+        else
+          write '"'
+          write node.format
+          write '"'
+        end
       when :dstr
         write "\""
         node.children.map do |child|

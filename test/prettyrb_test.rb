@@ -5,6 +5,13 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_heredoc
+    source = "<<~RUBY\n  puts 'hello'\nRUBY"
+    expected = "<<~RUBY\n  puts 'hello'\nRUBY"
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_ensure
     source = <<~RUBY
     begin

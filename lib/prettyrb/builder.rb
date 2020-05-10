@@ -2,6 +2,7 @@ module Prettyrb
   class Builder < Parser::Builders::Default
     NODE_TYPES = {
       if: Prettyrb::Nodes::IfNode,
+      str: Prettyrb::Nodes::StrNode,
     }.freeze
 
     def n(type, children, source_map)
