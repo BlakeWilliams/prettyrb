@@ -3,6 +3,7 @@ module Prettyrb
     NODE_TYPES = {
       if: Prettyrb::Nodes::IfNode,
       str: Prettyrb::Nodes::StrNode,
+      dstr: Prettyrb::Nodes::DstrNode,
     }.freeze
 
     def n(type, children, source_map)

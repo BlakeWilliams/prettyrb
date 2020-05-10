@@ -1,7 +1,9 @@
 module Prettyrb
   module Nodes
-    class StrNode < BaseNode
+    class DstrNode < BaseNode
       include StringHelper
+
+      HEREDOC_TYPE_REGEX = /<<(.)?/
 
       def format
         raw_content = loc.expression.source

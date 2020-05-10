@@ -106,7 +106,7 @@ module Prettyrb
 
     def write(input, skip_indent: false)
       if @newline
-        @output << indents
+        @output << indents unless skip_indent
         @current_line << indents unless skip_indent
       end
       @newline = false
@@ -303,7 +303,8 @@ module Prettyrb
           write node.heredoc_type if node.heredoc_type
           write node.heredoc_identifier
           newline
-          write node.heredoc_body
+          write node.heredoc_body, skip_indent: true
+          @newline = true
           write node.heredoc_identifier
 
           if node&.parent&.type == :send
@@ -316,17 +317,35 @@ module Prettyrb
           write '"'
         end
       when :dstr
-        write "\""
-        node.children.map do |child|
-          if child.type == :str
-            write child.children[0] # TODO better handling
-          else
-            write '#{'
-            visit child
-            write '}'
+        if node.heredoc?
+          if node&.parent&.type == :send
+            write "("
           end
+          write "<<"
+          write node.heredoc_type if node.heredoc_type
+          write node.heredoc_identifier
+          newline
+          write node.heredoc_body, skip_indent: true
+          @newline = true
+          write node.heredoc_identifier
+
+          if node&.parent&.type == :send
+            newline
+            write ")"
+          end
+        else
+          write "\""
+          node.children.map do |child|
+            if child.type == :str
+              write child.format
+            else
+              write '#{'
+              visit child
+              write '}'
+            end
+          end
+          write "\""
         end
-        write "\""
       when :begin
         if @previous_node&.type == :or || @previous_node&.type == :and
           write "("
