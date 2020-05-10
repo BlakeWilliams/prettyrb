@@ -22,11 +22,23 @@ Or install it yourself as:
 
 ## Usage
 
+CLI:
+
+```
+$ prettyrb format FILE
+```
+
+or to re-write the file:
+
+```
+prettyrb format FILE --write
+```
+
+In Ruby code:
+
 ```ruby
 PrettyRb.new(source_code).format
 ```
-
-CLI helper coming soon™
 
 ## License
 
