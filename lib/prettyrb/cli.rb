@@ -2,9 +2,10 @@ require "thor"
 
 module Prettyrb
   class CLI < Thor
-    desc "format FILE", "file to prettify"
+    desc "format [FILE]", "Ruby file to prettify"
     option :write, type: :boolean
-    def format(file)
+    method_option :files, type: :array
+    def format(*files)
       content = File.read(file)
       formatted_content = Prettyrb::Formatter.new(content).format
 
