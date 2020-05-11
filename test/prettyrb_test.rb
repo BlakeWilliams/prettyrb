@@ -5,6 +5,25 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_inheritance
+    source = <<~RUBY
+    class Foo < Bar
+      def self.wat
+        1 + 1
+      end
+    end
+    RUBY
+    expected = <<~RUBY
+    class Foo < Bar
+      def self.wat
+        1 + 1
+      end
+    end
+    RUBY
+
+    assert_code_formatted(expected, source, skip_rstrip: true)
+  end
+
   def test_heredoc_method_calls
     source = "<<~RUBY.strip\n  puts 'hello'\nRUBY"
     expected = "(<<~RUBY\n  puts 'hello'\nRUBY\n).strip"

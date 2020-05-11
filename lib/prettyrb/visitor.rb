@@ -125,14 +125,20 @@ module Prettyrb
           visit node.children[1]
         end
 
+        newline unless @output[-1] == "\n"
         write "end"
         newline
       when :class
         newline unless @previous_node.nil?
         write "class "
         visit node.children[0]
+
+        if node.children[1]
+          write " < "
+          visit node.children[1]
+        end
+
         newline
-        # TODO handle children[1] which is inheritance
 
         indent do
           visit node.children[2] if node.children[2]
