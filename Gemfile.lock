@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    prettyrb (0.3.1)
+    prettyrb (0.4.0)
       parser (~> 2.7.0.5)
       thor
 
