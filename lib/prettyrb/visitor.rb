@@ -650,6 +650,10 @@ module Prettyrb
         write "::"
       when :zsuper
         write "super"
+      when :super
+        write "super("
+        splittable_separated_map(node, node.children)
+        write ")"
       when :nth_ref
         write "$"
         write node.children[0].to_s

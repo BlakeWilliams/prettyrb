@@ -5,6 +5,22 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_super
+    source = <<~RUBY
+    def foo
+      super 1
+    end
+    RUBY
+
+    expected = <<~RUBY
+    def foo
+      super(1)
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_inheritance
     source = <<~RUBY
     class Foo < Bar
