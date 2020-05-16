@@ -14,7 +14,12 @@ module Prettyrb
     def write(*files)
       files.each do |file|
         content = File.read(file)
-        formatted_content = Prettyrb::Formatter.new(content).format
+        begin
+          formatted_content = Prettyrb::Formatter.new(content).format
+        rescue Exception => e
+          puts "Failed to write #{file}"
+          throw e
+        end
 
         File.open(file, 'w') do |f|
           f.write(formatted_content)

@@ -176,7 +176,20 @@ module Prettyrb
         write "end"
       when :send
         newline if node.parent&.type == :begin && @previous_node && @previous_node&.type != :send
-        if node.children[0] == nil
+
+        called_on_heredoc_chain = false
+
+        child = node.children[0]
+
+        while child&.type == :send || child&.type == :str # TODO handle dstr
+          called_on_heredoc_chain = true if child.type == :str && child.heredoc?
+          child = child.children[0]
+          break unless child.respond_to?(:type)
+        end
+
+        if called_on_heredoc_chain
+          visit node.children[0]
+        elsif node.children[0] == nil
           write node.children[1].to_s
 
           # TODO possible > MAX via `capture`
@@ -302,21 +315,36 @@ module Prettyrb
         end
       when :str
         if node.heredoc?
-          if node&.parent&.type == :send
-            write "("
-          end
+          # if node&.parent&.type == :send || node&.parent&.type == :begin && node&.parent&.parent.type == :send
+          #   write "("
+          # end
           write "<<"
           write node.heredoc_type if node.heredoc_type
           write node.heredoc_identifier
+
+          # if methods are called on the heredoc
+          parent = node.parent
+          while parent&.type == :send
+            write "."
+            write parent.children[1].to_s
+            if parent.children.length > 2
+              write "("
+
+              parent.children[2..-1].each_with_index do |child_node, index|
+                visit child_node
+                write ", " if parent.children[2..-1].length - 1 != index
+              end
+
+              write ")"
+            end
+
+            parent = parent&.parent
+          end
+
           newline
           write node.heredoc_body, skip_indent: true
           @newline = true
           write node.heredoc_identifier
-
-          if node&.parent&.type == :send
-            newline
-            write ")"
-          end
         else
           write '"'
           write node.format
@@ -324,7 +352,7 @@ module Prettyrb
         end
       when :dstr
         if node.heredoc?
-          if node&.parent&.type == :send
+          if node&.parent&.type == :send || node&.parent&.type == :begin && node&.parent&.parent.type == :send
             write "("
           end
           write "<<"
@@ -435,7 +463,7 @@ module Prettyrb
       when :lvar, :gvar
         write node.children[0].to_s
       when :self
-        "self"
+        write "self"
       when :sym
         content = node.children[0].to_s
 
@@ -467,7 +495,7 @@ module Prettyrb
         end
       when :case
         write "case "
-        visit node.children[0]
+        visit node.children[0] if node.children[0]
         newline
         node.children[1..-1].each do |child|
           if child && child.type != :when
@@ -484,6 +512,7 @@ module Prettyrb
             end
           end
         end
+        newline unless output.end_with?("\n")
         write "end"
       when :regexp
         write '/'

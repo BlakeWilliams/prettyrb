@@ -41,8 +41,8 @@ class PrettyrbTest < Minitest::Test
   end
 
   def test_heredoc_method_calls
-    source = "<<~RUBY.strip\n  puts 'hello'\nRUBY"
-    expected = "(<<~RUBY\n  puts 'hello'\nRUBY\n).strip"
+    source = "<<~RUBY.strip.replace(/hello/, 'goodbye')\n  puts 'hello'\nRUBY"
+    expected = "<<~RUBY.strip.replace(/hello/, \"goodbye\")\n  puts 'hello'\nRUBY"
 
     assert_code_formatted(expected, source)
   end
