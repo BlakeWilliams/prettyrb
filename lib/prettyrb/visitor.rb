@@ -181,8 +181,8 @@ module Prettyrb
 
         child = node.children[0]
 
-        while child&.type == :send || child&.type == :str # TODO handle dstr
-          called_on_heredoc_chain = true if child.type == :str && child.heredoc?
+        while child&.type == :send || child&.string?
+          called_on_heredoc_chain = true if child.string? && child.heredoc?
           child = child.children[0]
           break unless child.respond_to?(:type)
         end
@@ -517,7 +517,7 @@ module Prettyrb
       when :regexp
         write '/'
         node.children[0...-1].map do |child_node|
-          if child_node.type == :str
+          if child_node.string?
             write child_node.children[0].to_s
           else
             visit child_node

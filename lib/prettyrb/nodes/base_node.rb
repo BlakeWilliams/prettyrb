@@ -20,6 +20,10 @@ module Prettyrb
         @mutable[:parent]
       end
 
+      def string?
+        type == :str || type == :dstr
+      end
+
       protected
 
       def parent=(parent)
