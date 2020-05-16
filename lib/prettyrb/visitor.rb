@@ -511,7 +511,7 @@ module Prettyrb
         write '/'
         visit node.children[-1]
       when :regopt
-        node.children.map { |child| child.to_s }.join('')
+        write node.children.map { |child| child.to_s }.join('')
       when :when
         write "when"
 

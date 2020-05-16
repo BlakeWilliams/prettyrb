@@ -5,6 +5,18 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_regex_options
+    source = <<~RUBY
+    /hello/i
+    RUBY
+
+    expected = <<~RUBY
+    /hello/i
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_super
     source = <<~RUBY
     def foo
