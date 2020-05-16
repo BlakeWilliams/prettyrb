@@ -4,6 +4,7 @@ module Prettyrb
       if: Prettyrb::Nodes::IfNode,
       str: Prettyrb::Nodes::StrNode,
       dstr: Prettyrb::Nodes::DstrNode,
+      send: Prettyrb::Nodes::SendNode,
     }.freeze
 
     def n(type, children, source_map)

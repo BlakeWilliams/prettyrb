@@ -177,27 +177,15 @@ module Prettyrb
       when :send
         newline if node.parent&.type == :begin && @previous_node && @previous_node&.type != :send
 
-        called_on_heredoc_chain = false
+        if node.called_on_heredoc?
+          visit node.target
+        elsif node.target == nil
+          write node.method.to_s
 
-        child = node.children[0]
-
-        while child&.type == :send || child&.string?
-          called_on_heredoc_chain = true if child.string? && child.heredoc?
-          child = child.children[0]
-          break unless child.respond_to?(:type)
-        end
-
-        if called_on_heredoc_chain
-          visit node.children[0]
-        elsif node.children[0] == nil
-          write node.children[1].to_s
-
-          # TODO possible > MAX via `capture`
-          arguments = node.children[2..-1]
-          if arguments.length > 0
+          if node.arguments.length > 0
             write "("
             indent do
-              if splittable_separated_map(node, arguments) == MULTI_LINE
+              if splittable_separated_map(node, node.arguments) == MULTI_LINE
                 newline
               end
             end
@@ -205,35 +193,32 @@ module Prettyrb
           end
 
           newline if @previous_node&.type == :class 
-        elsif node.children[1] == :[]
-          visit node.children[0]
+        elsif node.array_access?
+          visit node.target
           write "["
           visit node.children[2]
           write "]"
-        elsif node.children[1] == :!
+        elsif node.negate?
           write "!"
-          visit node.children[0]
-        elsif node.children[1] == :-@ && node.children[2].nil?
+          visit node.target
+        elsif node.negative?
           write "-"
-          visit node.children[0]
-        elsif !node.children[1].to_s.match?(/[a-zA-Z]/)
-          visit node.children[0]
+          visit node.target
+        elsif node.infix?
+          visit node.target
           write " "
-          write node.children[1].to_s
+          write node.method.to_s
           write " "
           visit node.children[2]
         else
-          visit node.children[0]
+          visit node.target
           write "."
-          write node.children[1].to_s
+          write node.method.to_s
 
-          # TODO possible > MAX via `capture`
-          arguments = node.children[2..-1]
-          if arguments.length > 0
+          if node.arguments.length > 0
             write "("
-            arguments.each_with_index do |child_node, index|
-              visit child_node
-              write ", " unless index == arguments.length - 1
+            if splittable_separated_map(node, node.arguments) == MULTI_LINE
+              newline
             end
             write ")"
           end
