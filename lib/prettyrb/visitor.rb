@@ -481,8 +481,11 @@ module Prettyrb
           end
         end
       when :case
-        write "case "
-        visit node.children[0] if node.children[0]
+        write "case"
+        if node.children[0]
+          write " "
+          visit node.children[0]
+        end
         newline
         node.children[1..-1].each do |child|
           if child && child.type != :when
@@ -531,9 +534,11 @@ module Prettyrb
           splittable_separated_map(node, node.children[0..-2], skip_last_multiline_separator: true, write_space_if_single_line: true)
         end
 
-        newline
-        indent do
-          visit node.children[-1]
+        if node.children[-1]
+          newline
+          indent do
+            visit node.children[-1]
+          end
         end
       when :or_asgn, :and_asgn
         newline if @previous_node && ![:ivasgn, :or_asgn, :lvasgn, :op_asgn].include?(@previous_node.type)
