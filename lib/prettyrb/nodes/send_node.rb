@@ -18,7 +18,7 @@ module Prettyrb
       end
 
       def infix?
-        !children[1].to_s.match?(/^[a-zA-Z]/)
+        !children[1].to_s.match?(/^[a-zA-Z_]/)
       end
 
       def negative?

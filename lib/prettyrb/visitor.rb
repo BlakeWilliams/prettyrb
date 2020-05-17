@@ -336,7 +336,17 @@ module Prettyrb
           write "%"
           write node.percent_character
           write node.start_delimiter
-          write node.children[0]
+          node.children.map do |child|
+            if child.is_a?(String)
+              write child
+            elsif child.type == :str
+              write child.format
+            else
+              write '#{'
+              visit child
+              write '}'
+            end
+          end
           write node.closing_delimiter
         else
           write '"'
@@ -355,6 +365,8 @@ module Prettyrb
           end
           write '"'
         end
+      when :break
+        write "break"
       when :begin
         if @previous_node&.type == :or || @previous_node&.type == :and
           write "("

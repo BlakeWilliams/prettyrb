@@ -5,6 +5,18 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_break
+    source = <<~RUBY
+      break
+    RUBY
+
+    expected = <<~RUBY
+      break
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_dsym
     source = <<~RUBY
       :"hello_\#{name}"
@@ -43,11 +55,11 @@ class PrettyrbTest < Minitest::Test
 
   def test_regex_percent
     source = <<~RUBY
-      "".gsub(%r|/_|, "/")
+      URI_REGEXP = %r{^[-a-z]+://|^(?:cid|data):|^//}i
     RUBY
 
     expected = <<~RUBY
-      "".gsub(%r|/_|, "/")
+      URI_REGEXP = %r{^[-a-z]+://|^(?:cid|data):|^//}i
     RUBY
 
     assert_code_formatted(expected, source)

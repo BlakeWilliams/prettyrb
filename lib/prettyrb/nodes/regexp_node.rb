@@ -3,6 +3,13 @@ module Prettyrb
     class RegexpNode < BaseNode
       include StringHelper
 
+      PERCENT_PAIRS = {
+        "{" => "}",
+        "[" => "]",
+        "(" => ")",
+        "<" => ">",
+      }
+
       def percent?
         loc.expression.source.start_with?("%")
       end
@@ -16,7 +23,7 @@ module Prettyrb
       end
 
       def end_delimiter
-        loc.expression.source[-1]
+        PERCENT_PAIRS.fetch(start_delimiter, start_delimiter)
       end
 
       def format
