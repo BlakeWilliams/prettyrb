@@ -53,6 +53,20 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_hash_assign_mass_assignment
+    source = <<~RUBY
+      hello = {}
+      hello[1], hello[2] = true, false
+    RUBY
+
+    expected = <<~RUBY
+      hello = {}
+      hello[1], hello[2] = [true, false]
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_hash_assign
     source = <<~RUBY
       hello = {}

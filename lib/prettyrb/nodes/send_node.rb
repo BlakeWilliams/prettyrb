@@ -33,6 +33,10 @@ module Prettyrb
         children[1] == :[]=
       end
 
+      def left_hand_mass_assignment?
+        parent&.type == :mlhs && method.to_s.end_with?("=")
+      end
+
       def array_access?
         children[1] == :[]
       end

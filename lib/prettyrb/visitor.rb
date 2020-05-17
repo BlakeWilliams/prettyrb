@@ -205,7 +205,10 @@ module Prettyrb
           visit node.target
           write "["
           visit node.children[2]
-          write "] = "
+          write "]"
+          if !node.left_hand_mass_assignment?
+            write " = "
+          end
           visit node.children[3] if node.children[3]
         elsif node.array_access?
           visit node.target
@@ -231,7 +234,7 @@ module Prettyrb
           visit node.target
           write "."
 
-          if node&.parent&.type == :mlhs && node.method.to_s.end_with?("=")
+          if node.left_hand_mass_assignment?
             write node.method.to_s[0..-2]
           else
             write node.method.to_s
