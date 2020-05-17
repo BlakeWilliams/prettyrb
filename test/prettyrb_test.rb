@@ -236,6 +236,18 @@ class PrettyrbTest < Minitest::Test
 
   def test_negation
     source = <<~RUBY
+    !foo
+    RUBY
+
+    expected = <<~RUBY
+    !foo
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_negative
+    source = <<~RUBY
     -foo
     RUBY
 
