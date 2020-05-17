@@ -8,7 +8,7 @@ module Prettyrb
 
         super
 
-        children.each do |child|
+        children&.each do |child|
           next unless child.is_a?(BaseNode)
           child.parent = self
         end

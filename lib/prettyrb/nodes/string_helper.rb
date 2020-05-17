@@ -1,7 +1,23 @@
 module Prettyrb
   module Nodes
     module StringHelper
-      HEREDOC_TYPE_REGEX = /<<(.)?/
+      HEREDOC_TYPE_REGEX = /<<([~-])?/
+
+      def percent_string?
+        loc.expression.source.start_with?("%")
+      end
+
+      def percent_character
+        loc.expression.source[1]
+      end
+
+      def start_delimiter
+        loc.expression.source[2]
+      end
+
+      def closing_delimiter
+        loc.expression.source.rstrip[-1]
+      end
 
       def heredoc_identifier
         loc.heredoc_end.source.strip

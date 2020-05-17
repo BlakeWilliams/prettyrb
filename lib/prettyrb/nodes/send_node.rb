@@ -25,6 +25,10 @@ module Prettyrb
         children[1] == :!
       end
 
+      def array_assignment?
+        children[1] == :[]=
+      end
+
       def array_access?
         children[1] == :[]
       end
@@ -39,6 +43,12 @@ module Prettyrb
         end
 
         false
+      end
+
+      def heredoc_arguments?
+        arguments.any? do |child|
+          child.string? && child.heredoc? || (child.type == :send && child.called_on_heredoc?)
+        end
       end
     end
   end

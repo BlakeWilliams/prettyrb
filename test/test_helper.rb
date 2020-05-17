@@ -11,6 +11,6 @@ def assert_code_formatted(expected, source, skip_rstrip: false)
   if skip_rstrip
     assert_equal expected, result, result
   else
-    assert_equal expected.rstrip, result, result
+    assert_equal expected.rstrip, result.rstrip, result
   end
 end

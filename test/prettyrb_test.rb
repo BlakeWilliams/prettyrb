@@ -5,6 +5,93 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_mass_assignment_equals_method_call
+    source = <<~RUBY
+      view.output_buffer, @parent = @child, view.output_buffer
+    RUBY
+
+    expected = <<~RUBY
+      view.output_buffer, @parent = [@child, view.output_buffer]
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_regex_percent
+    source = <<~RUBY
+      "".gsub(%r|/_|, "/")
+    RUBY
+
+    expected = <<~RUBY
+      "".gsub(%r|/_|, "/")
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_hash_assign
+    source = <<~RUBY
+      hello = {}
+      hello[1] = true
+    RUBY
+
+    expected = <<~RUBY
+      hello = {}
+
+      hello[1] = true
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_cvar
+    source = <<~RUBY
+      puts @@rad
+    RUBY
+
+    expected = <<~RUBY
+      puts(@@rad)
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_cvasgn
+    source = <<~RUBY
+    @@wow = 1
+    RUBY
+
+    expected = <<~RUBY
+    @@wow = 1
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_supports_delegate
+    source = <<~RUBY
+    delegate :foo=, to: :bar
+    RUBY
+
+    expected = <<~RUBY
+    delegate(:foo=, { to: :bar })
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_percent_strings
+    source = <<~RUBY
+    puts %q(hello)
+    RUBY
+
+    expected = <<~RUBY
+    puts(%q(hello))
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_regex_options
     source = <<~RUBY
     /hello/i
@@ -61,7 +148,7 @@ class PrettyrbTest < Minitest::Test
 
   def test_heredoc
     source = "<<~RUBY\n  puts 'hello'\nRUBY"
-    expected = "<<~RUBY\n  puts 'hello'\nRUBY"
+    expected = "<<~RUBY\n  puts 'hello'\nRUBY\n"
 
     assert_code_formatted(expected, source)
   end
