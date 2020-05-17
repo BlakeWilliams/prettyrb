@@ -755,6 +755,16 @@ module Prettyrb
 
         newline
         visit node.children[1] if node.children[1]
+      when :while
+        write "while "
+        visit node.children[0]
+        newline
+        indent do
+          visit node.children[1]
+        end
+        newline
+
+        write "end"
       else
         raise "unhandled node type `#{node.type}`\nnode: #{node}"
       end

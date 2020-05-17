@@ -5,6 +5,22 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_while
+    source = <<~RUBY
+      while 1
+        puts "hey"
+      end
+    RUBY
+
+    expected = <<~RUBY
+      while 1
+        puts("hey")
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_break
     source = <<~RUBY
       break
