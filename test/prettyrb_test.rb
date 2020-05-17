@@ -5,6 +5,18 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_method_self_target
+    source = <<~RUBY
+      source = +"hello"
+    RUBY
+
+    expected = <<~RUBY
+      source = +"hello"
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_mass_assignment_equals_method_call
     source = <<~RUBY
       view.output_buffer, @parent = @child, view.output_buffer

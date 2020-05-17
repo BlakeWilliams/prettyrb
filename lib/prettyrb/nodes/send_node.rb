@@ -13,6 +13,10 @@ module Prettyrb
         children[2..-1]
       end
 
+      def self_target?
+        children[2].nil? && method.end_with?("@")
+      end
+
       def infix?
         !children[1].to_s.match?(/^[a-zA-Z]/)
       end

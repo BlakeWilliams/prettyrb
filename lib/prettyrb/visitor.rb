@@ -218,6 +218,9 @@ module Prettyrb
         elsif node.negative?
           write "-"
           visit node.target
+        elsif node.self_target?
+          write node.method.to_s[0..-2]
+          visit node.target
         elsif node.infix?
           visit node.target
           write " "
