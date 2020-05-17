@@ -14,7 +14,7 @@ module Prettyrb
       end
 
       def self_target?
-        children[2].nil? && method.end_with?("@")
+        children[2].nil? && method.to_s.end_with?("@")
       end
 
       def infix?
