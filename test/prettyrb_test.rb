@@ -5,6 +5,18 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_dsym
+    source = <<~RUBY
+      :"hello_\#{name}"
+    RUBY
+
+    expected = <<~RUBY
+      :"hello_\#{name}"
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_method_self_target
     source = <<~RUBY
       source = +"hello"

@@ -602,8 +602,19 @@ module Prettyrb
         write "defined?("
         visit node.children[0]
         write ")"
+      when :dsym
+        write ":\""
+        node.children.each do |child|
+          if child.string?
+            write child.children[0]
+          else
+            write "\#{"
+            visit child
+            write "}"
+          end
+        end
+        write "\""
       when :complex,
-        :dsym,
         :xstr,
         :'nth-ref',
         :'back-ref',
