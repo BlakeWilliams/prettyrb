@@ -42,6 +42,16 @@ module Prettyrb
       def unless_node?
         children[1].nil? && children[2] != :if
       end
+
+      def branches
+        self_nodes = [body_node, else_body_node]
+
+        if has_elsif?
+          self_nodes + else_body_node.branches
+        else
+          self_nodes
+        end
+      end
     end
   end
 end

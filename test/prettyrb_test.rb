@@ -868,12 +868,10 @@ class PrettyrbTest < Minitest::Test
     result = Prettyrb::Formatter.new(source).format
 
     expected = <<~RUBY
-    if
-      "hello" != "foo bar baz" &&
+    if "hello" != "foo bar baz" &&
       "foo" != "hello world" &&
       "wow" != "okay this might be long" &&
       "wow this is really really long" != "okay"
-    then
       true
     end
     RUBY

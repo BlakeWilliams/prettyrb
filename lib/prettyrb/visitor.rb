@@ -125,7 +125,6 @@ module Prettyrb
           visit node.children[1] if node.children[1]
         end
 
-        newline unless @output[-1] == "\n"
         write "end"
         newline
       when :class
@@ -157,7 +156,7 @@ module Prettyrb
       when :cvasgn
         write node.children[0].to_s
         write " = "
-        visit node.children[1]
+        visit node.children[1] if node.children[1]
       when :cvar
         write node.children[0].to_s
       when :block
@@ -200,7 +199,6 @@ module Prettyrb
             write ")"
           end
 
-          newline if @previous_node&.type == :class 
         elsif node.array_assignment?
           visit node.target
           write "["
@@ -250,51 +248,7 @@ module Prettyrb
         end
       when :if
         newline if @previous_node && node.parent&.type != :if
-        conditions = node.conditions_node
-
-        write node.if_type
-
-        conditions = capture do
-          visit node.children[0]
-        end
-
-        indent do
-          if !conditions.start_with?("\n")
-            write(" ")
-            write conditions
-          else
-            visit node.conditions_node
-
-            dedent do
-              newline
-              write "then"
-            end
-          end
-
-          newline
-          visit node.body_node
-        end
-
-        newline
-
-        if node.else_body_node
-          if node.has_elsif?
-            visit node.else_body_node
-          else
-            write "else"
-            newline
-
-            indent do
-              visit node.else_body_node
-            end
-
-            newline
-          end
-        end
-
-        if !node.is_elsif?
-          write "end"
-        end
+        Prettyrb::Correcter::BasicConditional.new(node: node, visitor: self).perform
       when :true
         write "true"
       when :false
@@ -387,27 +341,7 @@ module Prettyrb
           @previous_node = nil
         end
       when :or, :and
-        write "(" if node.parent&.type == :begin
-        possible_output = capture do
-          visit node.children[0]
-          if node.type == :or
-            write " || "
-          elsif node.type == :and
-            write " && "
-          end
-          visit node.children[1]
-        end
-        if @multiline_conditional_level > 0 # TODO track and check currently level
-          write_multiline_conditional(node)
-        elsif possible_output.length > MAX_LENGTH
-          in_multiline_conditional do
-            newline
-            write_multiline_conditional(node)
-          end
-        else
-          write possible_output
-        end
-        write ")" if node.parent&.type == :begin
+        Prettyrb::Correcter::Conditions.new(node: node, visitor: self).perform
       when :def, :defs
         newline unless @previous_node&.type.nil?
         if node.type == :defs
@@ -773,20 +707,6 @@ module Prettyrb
       else
         raise "unhandled node type `#{node.type}`\nnode: #{node}"
       end
-    end
-
-    def write_multiline_conditional(node)
-      visit node.children[0]
-
-      if node.type == :or
-        write " ||"
-      elsif node.type == :and
-        write " &&"
-      end
-
-      newline
-
-      visit node.children[1]
     end
 
     def format_string(string)

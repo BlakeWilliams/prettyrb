@@ -1,11 +1,13 @@
 module Prettyrb
   class Builder < Parser::Builders::Default
     NODE_TYPES = {
-      if: Prettyrb::Nodes::IfNode,
-      str: Prettyrb::Nodes::StrNode,
+      and: Prettyrb::Nodes::AndNode,
       dstr: Prettyrb::Nodes::DstrNode,
-      send: Prettyrb::Nodes::SendNode,
+      if: Prettyrb::Nodes::IfNode,
+      or: Prettyrb::Nodes::OrNode,
       regexp: Prettyrb::Nodes::RegexpNode,
+      send: Prettyrb::Nodes::SendNode,
+      str: Prettyrb::Nodes::StrNode,
     }.freeze
 
     def n(type, children, source_map)
