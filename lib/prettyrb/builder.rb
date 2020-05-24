@@ -8,6 +8,7 @@ module Prettyrb
       regexp: Prettyrb::Nodes::RegexpNode,
       send: Prettyrb::Nodes::SendNode,
       str: Prettyrb::Nodes::StrNode,
+      def: Prettyrb::Nodes::DefNode,
     }.freeze
 
     def n(type, children, source_map)

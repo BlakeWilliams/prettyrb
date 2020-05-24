@@ -20,8 +20,7 @@ module Prettyrb
         Parser::CurrentRuby.send(:setup_source_buffer, "file='(string)'", 1, @code, parser.default_encoding)
       )
 
-      visitor = Visitor.new
-      visitor.visit(root_node)
+      visitor = Visitor.new(root_node)
 
       visitor.output
     end

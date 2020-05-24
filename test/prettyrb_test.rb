@@ -979,11 +979,13 @@ class PrettyrbTest < Minitest::Test
     def rad
       hello = [
         "really really really really really really really really really long",
-        "really really really really really really really really really long",
+        "really really really really really really really really really long"
       ].join(",")
     end
     RUBY
     result = Prettyrb::Formatter.new(source).format
+
+    puts result
 
     assert_equal expected.rstrip, result
   end
