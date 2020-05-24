@@ -13,11 +13,21 @@ module Prettyrb
     end
 
     def inspect
-      children = @parts.map(&:inspect).join("\n  ")
+      inspect_children(self, indent_level: 0)
+    end
 
-      <<~RUBY
-      (#{self.class} #{children})
-      RUBY
+    private
+
+    def inspect_children(builder, indent_level:)
+      if builder.respond_to?(:parts)
+        children = builder.parts.map do |p|
+          inspect_children(p, indent_level: indent_level + 1)
+        end.join("\n")
+
+        "  " * indent_level + "(#{builder.class}\n#{children})"
+      else
+        "  " * indent_level + builder.inspect
+      end
     end
   end
   
@@ -31,6 +41,11 @@ module Prettyrb
       @joiner = joiner
     end
   end
+  # TODO MAYBE
+  # introduce MultilineGroup for cases when we know each individual top-level item should
+  # be on its own line. cases: `begin` outside of a conditional, kwbegin, class
+  # body, method body, conditional bodies
+  class MultilineJoin < Builder; end
   class Join < Builder; end
   class Indent < Builder; end
   class SplittableGroup < Builder
@@ -118,7 +133,9 @@ module Prettyrb
           ),
           Hardline.new,
           Indent.new(
-            visit(node.children[2]),
+            MultilineJoin.new(
+              visit(node.children[2]),
+            )
           ),
           Hardline.new,
           "end"
@@ -131,8 +148,10 @@ module Prettyrb
 
             Join.new(
               Indent.new(
-                visit(branch),
-                possible_newline,
+                MultilineJoin.new(
+                  visit(branch),
+                  possible_newline,
+                )
               )
             )
           elsif is_last
@@ -140,7 +159,9 @@ module Prettyrb
               "else",
               Hardline.new,
               Indent.new(
-                visit(branch),
+                MultilineJoin.new(
+                  visit(branch),
+                )
               ),
             )
           end
@@ -151,10 +172,10 @@ module Prettyrb
             "if",
             visit(node.conditions),
           ),
-            Hardline.new,
-            *branches,
-            Hardline.new,
-            "end"
+          Hardline.new,
+          *branches,
+          Hardline.new,
+          "end"
         )
         # branches = node.branches.each_with_object([]) do |branch, acc|
         # end
@@ -185,14 +206,22 @@ module Prettyrb
           )
         )
       when :and
-        Group.new(
-          Concat.new(
-            visit(node.children[0]),
-            "&&",
-            Softline.new,
-            visit(node.children[1]),
-          )
+        builder = Concat.new(
+          visit(node.children[0]),
+          "&&",
+          Softline.new,
+          visit(node.children[1]),
         )
+
+        if node.parent&.type == :and || node.parent&.type == :or
+          builder
+        else
+          Group.new(
+            Indent.new(
+              builder
+            )
+          )
+        end
       when :int
         node.children[0].to_s
       when :begin
@@ -219,7 +248,9 @@ module Prettyrb
           args_blocks,
           Hardline.new,
           Indent.new(
-            body_blocks
+            MultilineJoin.new(
+              body_blocks
+            )
           ),
           Hardline.new,
           "end"

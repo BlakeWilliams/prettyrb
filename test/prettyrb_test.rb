@@ -869,9 +869,9 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
     if "hello" != "foo bar baz" &&
-      "foo" != "hello world" &&
-      "wow" != "okay this might be long" &&
-      "wow this is really really long" != "okay"
+       "foo" != "hello world" &&
+       "wow" != "okay this might be long" &&
+       "wow this is really really long" != "okay"
       true
     end
     RUBY
