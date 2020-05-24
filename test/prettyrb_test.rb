@@ -927,10 +927,11 @@ class PrettyrbTest < Minitest::Test
     result = Prettyrb::Formatter.new(source).format
 
     expected = <<~RUBY
-    if (1 && 2) || 1 != 2
+    if (1 && 2) || (1 != 2)
       "hello"
     end
     RUBY
+
 
     assert_equal expected.strip, result
   end
@@ -949,7 +950,7 @@ class PrettyrbTest < Minitest::Test
     RUBY
     result = Prettyrb::Formatter.new(source).format
 
-    assert_equal expected, result
+    assert_equal expected.rstrip, result
   end
 
   def test_array_assign
@@ -960,7 +961,7 @@ class PrettyrbTest < Minitest::Test
     expected = <<~RUBY
     hello = [
       "really really really really really really really really really long",
-      "really really really really really really really really really long",
+      "really really really really really really really really really long"
     ]
     RUBY
     result = Prettyrb::Formatter.new(source).format

@@ -11,7 +11,7 @@ module Prettyrb
         end
       end
 
-      def conditions_node
+      def conditions
         children[0]
       end
 

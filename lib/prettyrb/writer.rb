@@ -28,11 +28,11 @@ module Prettyrb
       when Indent
         builder.parts.map do |part|
           indent_string(extra: 1) + write_child(part, indent_level: indent_level + 1)
-        end.join("")
+        end.compact.join("")
       when Group
         builder.parts.each_with_index.map do |part, index|
           write_child(part, group_level: group_level + 1)
-        end.join("")
+        end.compact.join(builder.joiner)
       when SplittableGroup
         content = builder.prefix + builder.parts.map do |part|
           write_child(part, group_level: group_level + 1)

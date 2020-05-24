@@ -21,6 +21,17 @@ module Prettyrb
         @visitor = visitor
       end
 
+      def has_parent?(type)
+        node = self
+
+        while node.parent
+          return true if node.parent.type == type
+          node = node.parent
+        end
+
+        false
+      end
+
       protected
 
       attr_reader :node, :visitor
