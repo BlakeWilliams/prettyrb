@@ -27,7 +27,11 @@ module Prettyrb
         builder.to_s
       when Indent
         builder.parts.map do |part|
-          indent_string(extra: 1) + write_child(part, indent_level: indent_level + 1)
+          if part && part.class != Hardline && part.class != Softline
+            indent_string(extra: 1) + write_child(part, indent_level: indent_level + 1)
+          elsif part
+            write_child(part, indent_level: indent_level + 1)
+          end
         end.compact.join("")
       when Group
         builder.parts.each_with_index.map do |part, index|

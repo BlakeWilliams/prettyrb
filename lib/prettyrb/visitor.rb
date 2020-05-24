@@ -124,15 +124,35 @@ module Prettyrb
           "end"
         )
       when :if
+        branches = node.branches.each_with_index.map do |branch, index|
+          is_last = index == node.branches.length - 1
+          if index == 0
+            possible_newline = Hardline.new if !is_last
+
+            Join.new(
+              Indent.new(
+                visit(branch),
+                possible_newline,
+              )
+            )
+          elsif is_last
+            Join.new(
+              "else",
+              Hardline.new,
+              Indent.new(
+                visit(branch),
+              ),
+            )
+          end
+        end.compact
+
         Join.new(
           Concat.new(
             "if",
             visit(node.conditions),
           ),
             Hardline.new,
-            Indent.new(
-              visit(node.body_node),
-            ),
+            *branches,
             Hardline.new,
             "end"
         )
@@ -236,11 +256,8 @@ module Prettyrb
           Concat.new(
             node.children[0].to_s,
             "=",
-          ),
-          Group.new(
-            " ",
             right_blocks,
-          )
+          ),
         )
       when :send
         if node.infix?
@@ -278,6 +295,8 @@ module Prettyrb
           node.format,
           "\"",
         )
+      when :true, :false, :nil
+        node.type.to_s
       else
         raise "Unexpected node type: #{node.type}"
       end

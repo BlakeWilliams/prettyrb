@@ -47,9 +47,9 @@ module Prettyrb
         self_nodes = [body_node, else_body_node]
 
         if has_elsif?
-          self_nodes + else_body_node.branches
+          (self_nodes + else_body_node.branches).compact
         else
-          self_nodes
+          self_nodes.compact
         end
       end
     end
