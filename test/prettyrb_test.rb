@@ -5,6 +5,128 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_csend
+    source = <<~RUBY
+    foo&.bar
+    RUBY
+
+    expected = <<~RUBY
+    foo&.bar
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_while
+    source = <<~RUBY
+    while 1
+    end
+    RUBY
+
+    expected = <<~RUBY
+    while 1
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_erange
+    source = <<~RUBY
+    1...3
+    RUBY
+
+    expected = <<~RUBY
+    1...3
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_irange
+    source = <<~RUBY
+    1..3
+    RUBY
+
+    expected = <<~RUBY
+    1..3
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_dstr
+    source = <<~RUBY
+    "hello \#{name}"
+    RUBY
+
+    expected = <<~RUBY
+    "hello \#{name}"
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_block_with_args
+    source = <<~RUBY
+    foo do |bar, baz|
+      puts "yo"
+    end
+    RUBY
+
+    expected = <<~RUBY
+    foo do |bar, baz|
+      puts("yo")
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_block
+    source = <<~RUBY
+    foo do
+      puts "yo"
+    end
+    RUBY
+
+    expected = <<~RUBY
+    foo do
+      puts("yo")
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_args
+    source = <<~RUBY
+    def foo(bar, baz)
+    end
+    RUBY
+
+    expected = <<~RUBY
+    def foo(bar, baz)
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_module
+    source = <<~RUBY
+    module Foo::Bar::Baz
+    end
+    RUBY
+
+    expected = <<~RUBY
+    module Foo::Bar::Baz
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_when_with_no_body
     source = <<~RUBY
       case
@@ -423,7 +545,7 @@ class PrettyrbTest < Minitest::Test
         true
       elsif a.values[0] == 2
         puts 1
-        false
+        falsa
       elsif b.values[0] == 3
         puts 2
         false

@@ -48,17 +48,17 @@ module Prettyrb
           write_child(part, indent_level: indent_level - 1)
         end.compact.join("")
       when Group
-        attempt = 0
+        attempt = -1
 
         loop do
+          attempt += 1
+
           content = builder.parts.compact.map do |part|
             write_child(part, group_level: group_level + 1, indent_group_level: indent_group_level + attempt)
           end.compact.join("")
 
-          if content.length < 100 || attempt > 100
+          if content.length < 100 || attempt > 4
             return content
-          else
-            attempt += 1
           end
         end
       when Hardline

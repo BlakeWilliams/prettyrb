@@ -3,7 +3,7 @@ require "thor"
 module Prettyrb
   class CLI < Thor
     desc "format [FILE]", "Ruby file to prettify"
-    def print(file)
+    def format(file)
       content = File.read(file)
       formatted_content = Prettyrb::Formatter.new(content).format
 

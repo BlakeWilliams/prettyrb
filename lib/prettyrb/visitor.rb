@@ -128,6 +128,23 @@ module Prettyrb
 
     def visit(node)
       case node.type
+      when :module
+        body = if node.children[1]
+          Indent.new(
+            Hardline.new,
+            visit(node.children[1]),
+          )
+        else
+          Hardline.new
+        end
+
+        Concat.new(
+          "module ",
+          visit(node.children[0]),
+          body,
+          Hardline.new,
+          "end"
+        )
       when :sclass
         body = if node.children[1]
           Concat.new(
@@ -155,14 +172,18 @@ module Prettyrb
           )
         end
 
+        content = if node.children[2]
+          Indent.new(
+            Hardline.new,
+            visit(node.children[2]),
+          )
+        end
+
         Concat.new(
           "class ",
           visit(node.children[0]),
           inheritance,
-          Indent.new(
-            Hardline.new,
-            visit(node.children[2]),
-          ),
+          content,
           Hardline.new,
           "end"
         )
@@ -222,20 +243,21 @@ module Prettyrb
         arguments = if node.children[0]
           Concat.new(
             " ",
-            visit(node.children[0])
+            visit(node.children[0]),
+            Hardline.new,
           )
         end
 
         cases = node.children[1..-1].map do |child|
           if child && child.type != :when
             Concat.new(
+              Hardline.new,
               "else",
-              Ident.new(
+              Indent.new(
                 Hardline.new,
                 visit(child)
               ),
             )
-            visit child
           elsif child
             visit child
           end
@@ -263,25 +285,21 @@ module Prettyrb
         end
 
         Concat.new(
-          "when",
-          Group.new(
-            IfBreak.new(with_break: "", without_break: " "),
-            Indent.new(
-              Softline.new,
-              arguments,
-            ),
-          ),
+          Hardline.new,
+          "when ",
+          arguments,
           body
         )
       when :const
-        prefix = if node.children[0]
-          visit node.children[0]
+        output = []
+
+        child = node.children[0]
+        while child&.type == :const
+          output << child.children[1]
+          child = child.children[0]
         end
 
-        Concat.new(
-          prefix,
-          node.children[1],
-        )
+        (output.reverse + [node.children[1]]).join("::")
       when :or
         Group.new(
           Concat.new(
@@ -312,6 +330,26 @@ module Prettyrb
         end
       when :int
         node.children[0].to_s
+      when :block
+        args = if node.children[1]&.children&.length > 0
+          Concat.new(
+            " |",
+            visit(node.children[1]),
+            "|",
+          )
+        end
+
+        Concat.new(
+          visit(node.children[0]),
+          " do",
+          args,
+          Indent.new(
+            Hardline.new,
+            visit(node.children[2]),
+          ),
+          Hardline.new,
+          "end",
+        )
       when :begin
         in_conditional = (node.parent&.type == :if && node.parent.children[0] == node) ||
           node.parent&.type == :or ||
@@ -390,7 +428,14 @@ module Prettyrb
           "end"
         )
       when :args
-        if node.children.length > 0
+        if node&.parent&.type == :block
+          Group.new(
+            Join.new(
+              separator: ",",
+              parts: node.children.map(&method(:visit)),
+            ),
+          )
+        elsif node.children.length > 0
           Group.new(
             "(",
             Softline.new,
@@ -404,6 +449,8 @@ module Prettyrb
         else
           nil
         end
+      when :arg
+        node.children[0]
       when :masgn
         Concat.new(
           visit(node.children[0]),
@@ -644,7 +691,7 @@ module Prettyrb
             options,
           )
         end
-      when :str
+      when :str, :dstr
         if node.heredoc?
           method_calls = if node.parent&.type == :send
             method_calls = []
@@ -854,6 +901,50 @@ module Prettyrb
             Hardline.new,
             body,
           )
+        )
+      when :while
+        args = if node.children[0]
+          Concat.new(
+            " ",
+            visit(node.children[0])
+          )
+        end
+
+        body = if node.children[1]
+          Indent.new(
+            Hardline.new,
+            visit(node.children[1]),
+          )
+        end
+
+        Concat.new(
+          "while",
+          args,
+          body,
+          Hardline.new,
+          "end",
+        )
+      when :csend
+        Concat.new(
+          visit(node.children[0]),
+          "&.", # TODO softbreak
+          node.children[1]
+        )
+      when :erange
+        right_side = visit(node.children[1]) if node.children[1]
+
+        Concat.new(
+          visit(node.children[0]),
+          "...",
+          right_side
+        )
+      when :irange
+        right_side = visit(node.children[1]) if node.children[1]
+
+        Concat.new(
+          visit(node.children[0]),
+          "..",
+          right_side
         )
       when :nth_ref
         Concat.new(
