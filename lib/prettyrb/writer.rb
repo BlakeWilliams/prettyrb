@@ -34,6 +34,7 @@ module Prettyrb
         parts.each do |part|
           output << write_child(part)
           output << separator if part != parts.last
+          output << "\n" + indent_string if break_up? && part != parts.last
         end
         output.join("")
       when Concat
@@ -41,6 +42,10 @@ module Prettyrb
       when Indent
         builder.parts.compact.map do |part|
           write_child(part, indent_level: indent_level + 1)
+        end.compact.join("")
+      when Dedent
+        builder.parts.compact.map do |part|
+          write_child(part, indent_level: indent_level - 1)
         end.compact.join("")
       when Group
         attempt = 0
@@ -57,7 +62,11 @@ module Prettyrb
           end
         end
       when Hardline
-        "\n" * builder.count + indent_string
+        if builder.skip_indent
+          "\n" * builder.count
+        else
+          "\n" * builder.count + indent_string
+        end
       when Softline
         if indent_group_level >= group_level
           "\n" + indent_string

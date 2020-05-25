@@ -105,6 +105,7 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
       hello = {}
+
       hello[1], hello[2] = [true, false]
     RUBY
 
@@ -186,6 +187,22 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_special_super
+    source = <<~RUBY
+    def foo
+      super
+    end
+    RUBY
+
+    expected = <<~RUBY
+    def foo
+      super
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_super
     source = <<~RUBY
     def foo
@@ -218,7 +235,7 @@ class PrettyrbTest < Minitest::Test
     end
     RUBY
 
-    assert_code_formatted(expected, source, skip_rstrip: true)
+    assert_code_formatted(expected, source)
   end
 
   def test_heredoc_method_calls
@@ -271,10 +288,30 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_def_rescue
+    source = <<~RUBY
+    def foo
+      false
+    rescue Exception => e
+      true
+    end
+    RUBY
+
+    expected = <<~RUBY
+    def foo
+      false
+    rescue Exception => e
+      true
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
 
   def test_begin_rescue
     source = <<~RUBY
     begin
+      puts "wat"
       false
     rescue Exception => e
       true
@@ -283,6 +320,8 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
     begin
+      puts("wat")
+
       false
     rescue Exception => e
       true
@@ -398,9 +437,11 @@ class PrettyrbTest < Minitest::Test
         true
       elsif a.values[0] == 2
         puts(1)
+
         false
       elsif b.values[0] == 3
         puts(2)
+
         false
       else
         nil
@@ -418,6 +459,7 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
     b = {}
+
     { a: 1, **b }
     RUBY
 
@@ -445,7 +487,7 @@ class PrettyrbTest < Minitest::Test
       foo: 1,
       foo: 1,
       foo: 1,
-      foo: 1,
+      foo: 1
     }
     RUBY
 
@@ -474,8 +516,8 @@ class PrettyrbTest < Minitest::Test
         :value,
         :value,
         :value,
-        :value,
-      ],
+        :value
+      ]
     )
     RUBY
 
@@ -503,7 +545,7 @@ class PrettyrbTest < Minitest::Test
       :value,
       :value,
       :value,
-      :value,
+      :value
     )
     RUBY
 
@@ -521,6 +563,7 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
     a = 1
+
     case a
     when
       :hello,
@@ -556,6 +599,7 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
     a = 1
+
     case a
     when 1, 2
       puts("hello")
@@ -627,7 +671,7 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
-  def test_hash_rocket
+  def test_hashnrocket
     source = <<~RUBY
     {:rad =>1, "radder" =>2}
     RUBY
@@ -1015,12 +1059,15 @@ class PrettyrbTest < Minitest::Test
     end
     RUBY
 
+    # TODO fix awkward method call
     expected = <<~RUBY
     def rad
       hello = [
         "really really really really really really really really really long",
         "really really really really really really really really really long"
-      ].join(",")
+      ].join(
+        ","
+      )
     end
     RUBY
     result = Prettyrb::Formatter.new(source).format

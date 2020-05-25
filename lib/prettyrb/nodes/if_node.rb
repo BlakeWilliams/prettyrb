@@ -43,13 +43,19 @@ module Prettyrb
         children[1].nil? && children[2] != :if
       end
 
-      def branches
-        self_nodes = [body_node, else_body_node]
-
+      def elsif_branches
         if has_elsif?
-          (self_nodes + else_body_node.branches).compact
+          [else_body_node] + else_body_node.elsif_branches
         else
-          self_nodes.compact
+          []
+        end
+      end
+
+      def else_branch
+        if has_elsif?
+          elsif_branches.last.children[2]
+        else
+          else_body_node
         end
       end
     end

@@ -62,14 +62,16 @@ module Prettyrb
     attr_reader :without_break, :with_break
     def initialize(without_break:, with_break: )
       @without_break = without_break
-      @without_break = with_break
+      @with_break = with_break
     end
   end
   class Indent < Builder; end
+  class Dedent < Builder; end
   class Hardline < Builder
-    attr_reader :count
-    def initialize(count: 1)
+    attr_reader :count, :skip_indent
+    def initialize(count: 1, skip_indent: false)
       @count = count
+      @skip_indent = skip_indent
     end
   end
   class Softline < Builder
@@ -156,7 +158,7 @@ module Prettyrb
         Concat.new(
           "class ",
           visit(node.children[0]),
-          *inheritance,
+          inheritance,
           Indent.new(
             Hardline.new,
             visit(node.children[2]),
@@ -165,35 +167,111 @@ module Prettyrb
           "end"
         )
       when :if
-        branches = node.branches.each_with_index.map do |branch, index|
-          is_last = index == node.branches.length - 1
-          if index == 0
-            possible_newline = Hardline.new if !is_last
+        body = if node.body_node
+          Concat.new(
+            Indent.new(
+              Hardline.new,
+              visit(node.body_node),
+            ),
+          )
+        else
+          Hardline.new
+        end
 
+        elsifs = if node.has_elsif?
+          [Hardline.new] + node.elsif_branches.map do |elsif_branch|
             Concat.new(
+              "elsif ",
+              visit(elsif_branch.conditions),
               Indent.new(
                 Hardline.new,
-                visit(branch),
+                visit(elsif_branch.body_node)
               ),
-              possible_newline,
-            )
-          elsif is_last
-            Concat.new(
-              "else",
-              Indent.new(
-                Hardline.new,
-                visit(branch),
-              )
+              Hardline.new,
             )
           end
-        end.compact
+        end
+
+        else_content = if node.else_branch
+          starting_newline = if !node.has_elsif?
+            Hardline.new
+          end
+          Concat.new(
+            starting_newline,
+            "else",
+            Indent.new(
+              Hardline.new,
+              visit(node.else_branch)
+            ),
+            Hardline.new,
+          )
+        else
+          Hardline.new
+        end
 
         Concat.new(
-          "if ",
+          node.unless_node? ? "unless" : "if",
+          " ",
           visit(node.conditions),
-          *branches,
+          body,
+          *elsifs,
+          else_content,
+          "end"
+        )
+      when :case
+        arguments = if node.children[0]
+          Concat.new(
+            " ",
+            visit(node.children[0])
+          )
+        end
+
+        cases = node.children[1..-1].map do |child|
+          if child && child.type != :when
+            Concat.new(
+              "else",
+              Ident.new(
+                Hardline.new,
+                visit(child)
+              ),
+            )
+            visit child
+          elsif child
+            visit child
+          end
+        end
+
+        Concat.new(
+          "case",
+          arguments,
+          Hardline.new,
+          Concat.new(*cases),
           Hardline.new,
           "end"
+        )
+      when :when
+        arguments = node.children[0..-2].compact
+        body = if node.children.last
+          Indent.new(
+            Hardline.new,
+            visit(node.children.last)
+          )
+        end
+
+        arguments = if arguments.size > 0
+          Join.new(separator: ",", parts: visit_each(arguments))
+        end
+
+        Concat.new(
+          "when",
+          Group.new(
+            IfBreak.new(with_break: "", without_break: " "),
+            Indent.new(
+              Softline.new,
+              arguments,
+            ),
+          ),
+          body
         )
       when :const
         prefix = if node.children[0]
@@ -235,9 +313,11 @@ module Prettyrb
       when :int
         node.children[0].to_s
       when :begin
-        in_conditional = node.parent&.type == :if || node.parent&.type == :or || node.parent&.type == :and
+        in_conditional = (node.parent&.type == :if && node.parent.children[0] == node) ||
+          node.parent&.type == :or ||
+          node.parent&.type == :and
 
-        if in_conditional
+        if in_conditional && node.type == :begin
           Concat.new(
             "(",
             *visit_each(node.children), # TODO Split or softline?
@@ -260,7 +340,6 @@ module Prettyrb
           Concat.new(*children)
         end
       when :defs
-        puts node.inspect
         args_blocks = visit node.children[2] if node.children[2]
 
         body = if node.children[3]
@@ -325,6 +404,22 @@ module Prettyrb
         else
           nil
         end
+      when :masgn
+        Concat.new(
+          visit(node.children[0]),
+          " = ",
+          visit(node.children[-1])
+        )
+      when :mlhs
+        if node.parent&.type == :mlhs
+          Concat.new(
+            "(",
+            Join.new(separator: ",", parts: visit_each(node.children)),
+            ")"
+          )
+        else
+          Join.new(separator: ",", parts: visit_each(node.children))
+        end
       when :casgn
         if !node.children[0].nil?
           puts "FATAL: FIX CASGN FIRST ARGUMENT"
@@ -339,75 +434,278 @@ module Prettyrb
           # Softline.new,
           visit(node.children[2]),
         )
-      when :lvasgn
+      when :lvasgn, :cvasgn, :ivasgn
         right_blocks = visit node.children[1] if node.children[1]
 
-        Concat.new(
-          node.children[0].to_s,
-          " = ",
-          # TODO line break for long lines
-          right_blocks,
-        )
+        if right_blocks
+          Concat.new(
+            node.children[0].to_s,
+            " = ",
+            # TODO line break for long lines
+            right_blocks,
+          )
+        else
+          Concat.new(
+            node.children[0].to_s,
+          )
+        end
       when :send
-        if node.infix?
+        if node.called_on_heredoc?
+          visit node.target
+        elsif node.array_assignment?
+          equals = if !node.left_hand_mass_assignment?
+            " = "
+          end
+
+          body = if node.children[3]
+            visit(node.children[3])
+          end
+
+          Concat.new(
+            visit(node.target),
+            "[",
+            visit(node.children[2]),
+            "]", # TODO line split
+            equals,
+            body,
+          )
+        elsif node.array_access?
+          Concat.new(
+            visit(node.target),
+            "[",
+            visit(node.children[2]),
+            "]"
+          )
+        elsif node.negate?
+          Concat.new(
+            "!",
+            visit(node.target),
+          )
+        elsif node.negative?
+          Concat.new(
+            "-",
+            visit(node.target),
+          )
+        elsif node.self_target?
+          body = visit(node.target) if node.target
+
+          Concat.new(
+            node.method.to_s[0..-2],
+            body,
+          )
+        elsif node.infix?
+          body = visit(node.children[2]) if node.children[2]
+
           Group.new(
             Concat.new(
               visit(node.target),
               " ",
               node.method,
               " ",
-              visit(node.children[2]), # TODO name?
+              body,
             )
-          )
-        elsif node.negative?
-          raise "handle negative :send"
-        elsif node.self_target?
-          Join.new(
-            node.method.to_s[0..-2],
-            visit(node.target),
           )
         else
           arguments = if node.arguments.length > 0
             Concat.new(
               "(",
-              Join.new(separator: ",", parts: visit_each(node.arguments)),
+              Indent.new(
+                Softline.new,
+                Join.new(separator: ",", parts: visit_each(node.arguments)),
+              ),
+              Softline.new,
               ")",
             )
+          end
+
+          method = if node.left_hand_mass_assignment?
+            node.method.to_s[0...-1]
+          else
+            node.method
           end
 
           if node.target
             Concat.new(
               visit(node.target),
               ".",
-              node.method,
-              arguments,
+              method,
+              Group.new(
+                arguments,
+              )
             )
           else
             Concat.new(
-              node.method,
-              arguments,
+              method,
+              Group.new(
+                arguments,
+              )
             )
           end
         end
-      when :array
-        array_nodes = node.children.each_with_object([]) do |child, acc|
-          acc.push Concat.new(Softline.new, visit(child))
+      when :hash
+        if node.children.length > 0
+          Group.new(
+            "{",
+            IfBreak.new(without_break: " ", with_break: ""),
+            Indent.new(
+              Softline.new,
+              Join.new(separator: ",", parts: visit_each(node.children)),
+              IfBreak.new(without_break: " ", with_break: ""),
+            ),
+            Softline.new,
+            "}"
+          )
+        else
+          "{}"
+        end
+      when :pair
+        if node.children[0].type == :sym
+          Concat.new(
+            visit(node.children[0]),
+            visit(node.children[1])
+          )
+        else
+          Concat.new(
+            visit(node.children[0]),
+            " => ",
+            visit(node.children[1])
+          )
+        end
+      when :defined?
+        Concat.new(
+          "defined?(",
+          visit(node.children[0]),
+          ")"
+        )
+      when :and_asgn, :or_asgn
+        operator = if node.type == :and_asgn
+          "&&="
+        elsif node.type == :or_asgn
+          "||="
         end
 
         Group.new(
-          "[",
-          Indent.new(
-            Join.new(separator: ",", parts: array_nodes),
-          ),
+          visit(node.children[0]),
+          " ",
+          operator,
+          IfBreak.new(with_break: "", without_break: " "),
           Softline.new,
-          "]"
+          visit(node.children[1])
         )
+      when :array
+        if node.parent&.type == :resbody
+          Join.new(separator: ",", parts: visit_each(node.children))
+        elsif node.children[0]&.type == :splat
+          visit node.children[0]
+        else
+          array_nodes = node.children.each_with_object([]) do |child, acc|
+            acc.push visit(child)
+          end
+
+          Group.new(
+            "[",
+            Indent.new(
+              Softline.new,
+              Join.new(separator: ",", parts: array_nodes),
+            ),
+            Softline.new,
+            "]"
+          )
+        end
+      when :regopt
+        node.children.map(&:to_s).join("")
+      when :regexp
+        content = node.children[0...-1].map do |child|
+          if child.type == :str
+            child.children[0].to_s
+          else
+            visit child
+          end
+        end
+
+        options = if node.children[-1]
+          visit node.children[-1]
+        end
+
+        if node.percent?
+          Concat.new(
+            "%",
+            node.percent_type,
+            node.start_delimiter,
+            *content,
+            node.end_delimiter,
+            options,
+          )
+        else
+          Concat.new(
+            "/",
+            *content,
+            "/",
+            options,
+          )
+        end
       when :str
-        Concat.new(
-          "\"",
-          node.format,
-          "\"",
-        )
+        if node.heredoc?
+          method_calls = if node.parent&.type == :send
+            method_calls = []
+            parent = node.parent
+
+            while parent && parent.type == :send && parent.called_on_heredoc?
+              arguments = if parent.arguments.length > 0
+                Concat.new(
+                  "(",
+                  Join.new(separator: ",", parts: visit_each(parent.arguments)),
+                  ")",
+                )
+              end
+
+              method_calls.push(
+                Concat.new(
+                  ".",
+                  parent.children[1].to_s,
+                  arguments,
+                )
+              )
+              parent = parent.parent
+            end
+
+            Concat.new(*method_calls)
+          end
+
+          Concat.new(
+            "<<",
+            node.heredoc_type,
+            node.heredoc_identifier,
+            method_calls,
+            Hardline.new(skip_indent: true),
+            node.heredoc_body,
+            node.heredoc_identifier
+          )
+        elsif node.percent_string?
+          body = node.children.map do |child|
+            if child.is_a?(String)
+              child
+            elsif child.type == :str
+              child.children[0]
+            else
+              visit child
+            end
+          end
+
+          Concat.new(
+            "%",
+            node.percent_character,
+            node.start_delimiter,
+            *body,
+            node.closing_delimiter,
+          )
+        else
+          Concat.new(
+            "\"",
+            node.format,
+            "\"",
+          )
+        end
       when :alias
         Concat.new(
           "alias ",
@@ -439,6 +737,16 @@ module Prettyrb
             )
           end
         end
+      when :kwsplat
+        Concat.new(
+          "**",
+          visit(node.children[0])
+        )
+      when :splat
+        Concat.new(
+          "*",
+          visit(node.children[0])
+        )
       when :undef
         Concat.new(
           "undef",
@@ -479,10 +787,89 @@ module Prettyrb
         end
       when :kwnilarg
         "**nil"
-      when :lvar
+      when :lvar, :cvar, :ivar
         node.children[0].to_s
-      when :true, :false, :nil, :self
+      when :true, :false, :nil, :self, :break
         node.type.to_s
+      when :cbase
+        "::"
+      when :kwbegin
+        Concat.new(
+          "begin",
+          Indent.new(
+            Hardline.new,
+            visit(node.children[0])
+          ),
+          Hardline.new,
+          "end"
+        )
+      when :ensure
+        Concat.new(
+          Indent.new(
+            visit(node.children[0]),
+          ),
+          Dedent.new(
+            Hardline.new,
+            "ensure",
+          ),
+          Hardline.new,
+          visit(node.children[1]),
+        )
+      when :rescue
+        Concat.new(
+          visit(node.children[0]),
+          Dedent.new(
+            Hardline.new,
+            visit(node.children[1])
+          )
+        )
+      when :resbody
+        args = node.children[0]
+        assignment = node.children[1]
+        body = node.children[2]
+
+        arguments = if args
+          Concat.new(
+            " ",
+            visit(args),
+          )
+        end
+
+        argument_assignment = if assignment
+          Concat.new(
+            " => ",
+            visit(assignment)
+          )
+        end
+
+        body = if body
+          visit(body)
+        end
+
+        Concat.new(
+          "rescue",
+          arguments,
+          argument_assignment,
+          Indent.new(
+            Hardline.new,
+            body,
+          )
+        )
+      when :nth_ref
+        Concat.new(
+          "$",
+          node.children[0].to_s,
+        )
+      when :super
+        Concat.new(
+          "super(",
+          *visit_each(node.children),
+          ")"
+        )
+      when :zsuper
+        "super"
+      when :block_pass
+        Concat.new("&", visit(node.children[0]))
       else
         raise "Unexpected node type: #{node.type}"
       end
