@@ -78,9 +78,11 @@ module Prettyrb
       end
     end
 
-    private
+    protected
 
     attr_reader :builder, :writer, :indent_level, :group_level, :indent_group_level
+
+    private
 
     def break_up?
       indent_group_level >= group_level
