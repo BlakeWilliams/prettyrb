@@ -642,8 +642,7 @@ class PrettyrbTest < Minitest::Test
     RUBY
 
     expected = <<~RUBY
-    add(
-      [
+    add([
         :value,
         :value,
         :value,
@@ -659,8 +658,7 @@ class PrettyrbTest < Minitest::Test
         :value,
         :value,
         :value
-      ]
-    )
+      ])
     RUBY
 
     assert_code_formatted(expected, source)
@@ -1205,9 +1203,7 @@ class PrettyrbTest < Minitest::Test
       hello = [
         "really really really really really really really really really long",
         "really really really really really really really really really long"
-      ].join(
-        ","
-      )
+      ].join(",")
     end
     RUBY
     result = Prettyrb::Formatter.new(source).format

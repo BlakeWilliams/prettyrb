@@ -6,12 +6,13 @@ module Prettyrb
 
     def_delegators :@writer, :indent_level
 
-    def initialize(builder, indent_level: 0, group_level: -1, indent_group_level: -2)
+    def initialize(builder, indent_level: 0, group_level: -1, break_group_levels: [], max_length: 100)
       @builder = builder
       @writer = writer
       @indent_level = indent_level
       @group_level = group_level
-      @indent_group_level = indent_group_level
+      @break_group_levels = break_group_levels
+      @max_length = max_length
     end
 
     def to_s
@@ -38,18 +39,28 @@ module Prettyrb
           write_child(part, indent_level: indent_level - 1)
         end.compact.join("")
       when Document::Group
-        attempt = -1
+        content = builder.parts.compact.map do |part|
+          write_child(part, group_level: group_level + 1)
+        end.compact.join("")
 
-        loop do
-          attempt += 1
+        if content.split("\n").any? { |line| line.length > max_length }
+          max_group_depth = group_level + builder.max_group_depth + 1
 
-          content = builder.parts.compact.map do |part|
-            write_child(part, group_level: group_level + 1, indent_group_level: indent_group_level + attempt)
-          end.compact.join("")
+          group_level.upto(max_group_depth) do |i|
+            content = builder.parts.compact.map do |part|
+              write_child(part, group_level: group_level + 1, break_group_levels: [i])
+            end.compact.join("")
 
-          if content.length < 100 || attempt > 4
-            return content
+            if content.split("\n").all? { |line| line.length < max_length }
+              return content
+            end
           end
+
+          builder.parts.compact.map do |part|
+            write_child(part, group_level: group_level + 1, break_group_levels: group_level..max_group_depth)
+          end.compact.join("")
+        else
+          content
         end
       when Document::Hardline
         if builder.skip_indent
@@ -58,7 +69,7 @@ module Prettyrb
           "\n" * builder.count + indent_string
         end
       when Document::Softline
-        if indent_group_level >= group_level
+        if break_group_levels.include?(group_level)
           "\n" + indent_string
         else
           builder.fallback
@@ -80,12 +91,12 @@ module Prettyrb
 
     protected
 
-    attr_reader :builder, :writer, :indent_level, :group_level, :indent_group_level
+    attr_reader :builder, :writer, :indent_level, :group_level, :break_group_levels, :max_length
 
     private
 
     def break_up?
-      indent_group_level >= group_level
+      break_group_levels.include?(group_level)
     end
 
     def write_softline?
@@ -96,16 +107,17 @@ module Prettyrb
       "  " * (indent_level + extra)
     end
 
-    def write_child(child, indent_level: nil, group_level: nil, indent_group_level: nil)
+    def write_child(child, indent_level: nil, group_level: nil, break_group_levels: nil)
       indent_level ||= self.indent_level
       group_level ||= self.group_level
-      indent_group_level ||= self.indent_group_level
+      break_group_levels ||= self.break_group_levels
 
       self.class.new(
         child,
         indent_level: indent_level,
         group_level: group_level,
-        indent_group_level: indent_group_level,
+        break_group_levels: break_group_levels,
+        max_length: max_length,
       ).to_s
     end
   end

@@ -1,5 +1,7 @@
 module Prettyrb
   class Visitor
+    include Document::DSL
+
     MAX_LENGTH = 100
     SINGLE_LINE = "single_line"
     MULTI_LINE = "multi_line"
@@ -910,38 +912,6 @@ module Prettyrb
       node.map do |child|
         visit(child)
       end
-    end
-
-    def concat(*args)
-      Document::Concat.new(*args)
-    end
-
-    def join(*args)
-      Document::Join.new(*args)
-    end
-
-    def group(*args)
-      Document::Group.new(*args)
-    end
-
-    def if_break(*args)
-      Document::IfBreak.new(*args)
-    end
-
-    def indent(*args)
-      Document::Indent.new(*args)
-    end
-
-    def dedent(*args)
-      Document::Dedent.new(*args)
-    end
-
-    def hardline(*args)
-      Document::Hardline.new(*args)
-    end
-
-    def softline(*args)
-      Document::Softline.new(*args)
     end
   end
 end

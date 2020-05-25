@@ -1,5 +1,39 @@
 module Prettyrb
   module Document
+    module DSL
+      def concat(*args)
+        Document::Concat.new(*args)
+      end
+
+      def join(*args)
+        Document::Join.new(*args)
+      end
+
+      def group(*args)
+        Document::Group.new(*args)
+      end
+
+      def if_break(*args)
+        Document::IfBreak.new(*args)
+      end
+
+      def indent(*args)
+        Document::Indent.new(*args)
+      end
+
+      def dedent(*args)
+        Document::Dedent.new(*args)
+      end
+
+      def hardline(*args)
+        Document::Hardline.new(*args)
+      end
+
+      def softline(*args)
+        Document::Softline.new(*args)
+      end
+    end
+
     class Builder
       attr_reader :parts
 
@@ -15,6 +49,36 @@ module Prettyrb
 
       def inspect
         inspect_children(self, indent_level: 0)
+      end
+
+      def has_group_part?
+        parts.any? { |p| p.is_a?(Group) }
+      end
+
+      def groups
+        parts.select { |p| p.is_a?(Group) } + parts.flat_map do |p|
+          p.groups if p.respond_to?(:groups)
+        end.compact
+      end
+
+      def max_group_depth
+        return @max_group_depth if defined?(@max_group_depth)
+
+        has_groups = parts.any? { |p| p.is_a?(Group) }
+
+        total = if has_groups
+          1
+        else
+          0
+        end
+
+        # TODO swap filter/flat_map for single iteration
+        nested_total = parts.
+          filter { |p| p.respond_to?(:max_group_depth) }.
+          flat_map { |p| p.max_group_depth }.
+          max
+
+        @max_group_depth = total + (nested_total || 0)
       end
 
       private
