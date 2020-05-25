@@ -3,6 +3,7 @@ require 'delegate'
 module Prettyrb
   class Writer
     extend Forwardable
+
     def_delegators :@writer, :indent_level
 
     def initialize(builder, indent_level: 0, group_level: -1, indent_group_level: -2)
@@ -15,7 +16,7 @@ module Prettyrb
 
     def to_s
       case builder
-      when Join
+      when Document::Join
         separator = break_up? ? builder.separator : builder.separator + " "
         parts = builder.parts.compact
 
@@ -26,17 +27,17 @@ module Prettyrb
           output << "\n" + indent_string if break_up? && part != parts.last
         end
         output.join("")
-      when Concat
+      when Document::Concat
         builder.parts.compact.map { |p| write_child(p) }.compact.join("")
-      when Indent
+      when Document::Indent
         builder.parts.compact.map do |part|
           write_child(part, indent_level: indent_level + 1)
         end.compact.join("")
-      when Dedent
+      when Document::Dedent
         builder.parts.compact.map do |part|
           write_child(part, indent_level: indent_level - 1)
         end.compact.join("")
-      when Group
+      when Document::Group
         attempt = -1
 
         loop do
@@ -50,19 +51,19 @@ module Prettyrb
             return content
           end
         end
-      when Hardline
+      when Document::Hardline
         if builder.skip_indent
           "\n" * builder.count
         else
           "\n" * builder.count + indent_string
         end
-      when Softline
+      when Document::Softline
         if indent_group_level >= group_level
           "\n" + indent_string
         else
           builder.fallback
         end
-      when IfBreak
+      when Document::IfBreak
         if break_up?
           builder.with_break
         else

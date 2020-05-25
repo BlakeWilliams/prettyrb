@@ -14,6 +14,8 @@ require "prettyrb/nodes/and_node"
 require "prettyrb/nodes/or_node"
 require "prettyrb/nodes/regexp_node"
 require "prettyrb/nodes/send_node"
+
+require "prettyrb/document"
 require "prettyrb/builder"
 require "prettyrb/formatter"
 require "prettyrb/visitor"
