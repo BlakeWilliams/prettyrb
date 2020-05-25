@@ -32,7 +32,11 @@ module Prettyrb
         builder.parts.compact.map { |p| write_child(p) }.compact.join("")
       when Document::Indent
         builder.parts.compact.map do |part|
-          write_child(part, indent_level: indent_level + 1)
+          if builder.only_when_break && !break_up?
+            write_child(part)
+          else
+            write_child(part, indent_level: indent_level + 1)
+          end
         end.compact.join("")
       when Document::Dedent
         builder.parts.compact.map do |part|

@@ -643,22 +643,22 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
     add([
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value,
-        :value
-      ])
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value,
+      :value
+    ])
     RUBY
 
     assert_code_formatted(expected, source)

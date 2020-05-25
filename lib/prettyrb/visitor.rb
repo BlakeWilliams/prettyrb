@@ -481,6 +481,7 @@ module Prettyrb
               indent(
                 softline,
                 join(separator: ",", parts: visit_each(node.arguments)),
+                only_when_break: true,
               ),
               softline,
               ")",

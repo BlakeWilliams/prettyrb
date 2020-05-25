@@ -130,6 +130,12 @@ module Prettyrb
     end
 
     class Indent < Builder
+      attr_reader :only_when_break
+
+      def initialize(*args, only_when_break: false)
+        @only_when_break = only_when_break
+        super(*args)
+      end
     end
 
     class Dedent < Builder
