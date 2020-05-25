@@ -5,6 +5,26 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_nested_begin
+    source = <<~RUBY
+    def foo
+    output = []
+
+    (output.reverse + [1]).reverse
+    end
+    RUBY
+
+    expected = <<~RUBY
+    def foo
+      output = []
+
+      (output.reverse + [1]).reverse
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_csend
     source = <<~RUBY
     foo&.bar
@@ -528,12 +548,12 @@ class PrettyrbTest < Minitest::Test
   def test_const_cbase
     source = <<~RUBY
     require "file"
-    ::File.new
+    ::App::File.new
     RUBY
 
     expected = <<~RUBY
     require("file")
-    ::File.new
+    ::App::File.new
     RUBY
 
     assert_code_formatted(expected, source)
@@ -545,7 +565,7 @@ class PrettyrbTest < Minitest::Test
         true
       elsif a.values[0] == 2
         puts 1
-        falsa
+        false
       elsif b.values[0] == 3
         puts 2
         false
@@ -1059,8 +1079,6 @@ class PrettyrbTest < Minitest::Test
     end
     RUBY
 
-    puts result
-
     assert_equal expected.rstrip, result.rstrip
   end
 
@@ -1193,8 +1211,6 @@ class PrettyrbTest < Minitest::Test
     end
     RUBY
     result = Prettyrb::Formatter.new(source).format
-
-    puts result
 
     assert_equal expected.rstrip, result
   end

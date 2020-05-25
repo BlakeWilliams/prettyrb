@@ -142,7 +142,6 @@ module Prettyrb
           "module ",
           visit(node.children[0]),
           body,
-          Hardline.new,
           "end"
         )
       when :sclass
@@ -244,7 +243,6 @@ module Prettyrb
           Concat.new(
             " ",
             visit(node.children[0]),
-            Hardline.new,
           )
         end
 
@@ -285,16 +283,21 @@ module Prettyrb
         end
 
         Concat.new(
-          Hardline.new,
-          "when ",
-          arguments,
+          "when",
+          Group.new(
+            IfBreak.new(with_break: "", without_break: " "),
+            Indent.new(
+              Softline.new,
+              arguments,
+            ),
+          ),
           body
         )
       when :const
         output = []
 
         child = node.children[0]
-        while child&.type == :const
+        while child&.type == :const || child&.type == :cbase
           output << child.children[1]
           child = child.children[0]
         end
@@ -351,11 +354,12 @@ module Prettyrb
           "end",
         )
       when :begin
-        in_conditional = (node.parent&.type == :if && node.parent.children[0] == node) ||
+        needs_parens = (node.parent&.type == :if && node.parent.children[0] == node) ||
           node.parent&.type == :or ||
-          node.parent&.type == :and
+          node.parent&.type == :and ||
+          node.parent&.type == :send
 
-        if in_conditional && node.type == :begin
+        if needs_parens
           Concat.new(
             "(",
             *visit_each(node.children), # TODO Split or softline?
@@ -759,6 +763,24 @@ module Prettyrb
           visit(node.children[0]),
           " ",
           visit(node.children[1]),
+        )
+      when :dsym
+        body = node.children.map do |child|
+          if child.string?
+            child.children[0]
+          else
+            Concat.new(
+              "\#{",
+              visit(child),
+              "}",
+            )
+          end
+        end
+
+        Concat.new(
+          ":\"",
+          *body,
+          "\"",
         )
       when :sym
         content = node.children[0].to_s
