@@ -15,17 +15,6 @@ module Prettyrb
 
     def to_s
       case builder
-      when MultilineJoin
-        output = []
-
-        builder.parts.each do |part|
-          content = write_child(part)
-          if content
-            output << indent_string + content
-            output << "\n"
-          end
-        end
-        output.join("")
       when Join
         separator = break_up? ? builder.separator : builder.separator + " "
         parts = builder.parts.compact
