@@ -46,23 +46,32 @@ module Prettyrb
   # be on its own line. cases: `begin` outside of a conditional, kwbegin, class
   # body, method body, conditional bodies
   class MultilineJoin < Builder; end
-  class Join < Builder; end
-  class Indent < Builder; end
-  class SplittableGroup < Builder
-    attr_reader :prefix, :suffix, :joiner
+  class Join < Builder
+    attr_reader :separator
 
-    def initialize(prefix: nil, suffix: nil, joiner: ",", parts:)
+    def initialize(separator: ",", parts:)
       if parts.is_a?(Array)
         super(*parts)
       else
         super(parts)
       end
-      @prefix = prefix
-      @suffix = suffix
-      @joiner = joiner
+      @separator = separator
     end
   end
-  class Hardline < Builder; end
+  class IfBreak
+    attr_reader :without_break, :with_break
+    def initialize(without_break:, with_break: )
+      @without_break = without_break
+      @without_break = with_break
+    end
+  end
+  class Indent < Builder; end
+  class Hardline < Builder
+    attr_reader :count
+    def initialize(count: 1)
+      @count = count
+    end
+  end
   class Softline < Builder
     attr_reader :fallback
 
@@ -120,22 +129,18 @@ module Prettyrb
       when :class
         inheritance = if node.children[1]
           Concat.new(
-            "<",
+            " < ",
             visit(node.children[1]),
           )
         end
 
-        Join.new(
-          Concat.new(
-            "class",
-            visit(node.children[0]),
-            *inheritance,
-          ),
-          Hardline.new,
+        Concat.new(
+          "class ",
+          visit(node.children[0]),
+          *inheritance,
           Indent.new(
-            MultilineJoin.new(
-              visit(node.children[2]),
-            )
+            Hardline.new,
+            visit(node.children[2]),
           ),
           Hardline.new,
           "end"
@@ -146,47 +151,31 @@ module Prettyrb
           if index == 0
             possible_newline = Hardline.new if !is_last
 
-            Join.new(
+            Concat.new(
               Indent.new(
-                MultilineJoin.new(
-                  visit(branch),
-                  possible_newline,
-                )
-              )
+                Hardline.new,
+                visit(branch),
+              ),
+              possible_newline,
             )
           elsif is_last
-            Join.new(
+            Concat.new(
               "else",
-              Hardline.new,
               Indent.new(
-                MultilineJoin.new(
-                  visit(branch),
-                )
-              ),
+                Hardline.new,
+                visit(branch),
+              )
             )
           end
         end.compact
 
-        Join.new(
-          Concat.new(
-            "if",
-            visit(node.conditions),
-          ),
-          Hardline.new,
+        Concat.new(
+          "if ",
+          visit(node.conditions),
           *branches,
           Hardline.new,
           "end"
         )
-        # branches = node.branches.each_with_object([]) do |branch, acc|
-        # end
-        # branches = Join.new(*branches)
-        #
-        # Group.new(
-        #   "if",
-        #   SplittableGroup.new(prefix: "(", suffix: ")", joiner: ",", parts: visit(node.conditions)),
-        #   Hardline,
-        #   "end",
-        # )
       when :const
         prefix = if node.children[0]
           visit node.children[0]
@@ -200,7 +189,8 @@ module Prettyrb
         Group.new(
           Concat.new(
             visit(node.children[0]),
-            "||",
+            " ||",
+            IfBreak.new(with_break: "", without_break: " "),
             Softline.new,
             visit(node.children[1]),
           )
@@ -208,7 +198,8 @@ module Prettyrb
       when :and
         builder = Concat.new(
           visit(node.children[0]),
-          "&&",
+          " &&",
+          IfBreak.new(with_break: "", without_break: " "),
           Softline.new,
           visit(node.children[1]),
         )
@@ -228,31 +219,49 @@ module Prettyrb
         in_conditional = node.parent&.type == :if || node.parent&.type == :or || node.parent&.type == :and
 
         if in_conditional
-          Join.new(
+          Concat.new(
             "(",
-            *visit_each(node.children),
+            *visit_each(node.children), # TODO Split or softline?
             ")"
           )
         else
-          raise
+          children = []
+          node.children.each_with_index do |child, index|
+            children << visit(child)
+
+            next_child = node.children[index + 1]
+
+            if next_child&.type != child.type && node.children.last != child
+              children << Hardline.new(count: 2)
+            elsif node.children.last != child
+              children << Hardline.new
+            end
+          end
+
+          Concat.new(*children)
         end
       when :def
         args_blocks = visit node.args if node.args
         body_blocks = visit node.body if node.body
 
-        Join.new(
+        body = if node.body
           Concat.new(
-            "def",
+            Indent.new(
+              Hardline.new,
+              body_blocks,
+            ),
+            Hardline.new,
+          )
+        end
+
+        Group.new(
+          Concat.new(
+            "def ",
+            # TODO possible break
             node.name,
           ),
           args_blocks,
-          Hardline.new,
-          Indent.new(
-            MultilineJoin.new(
-              body_blocks
-            )
-          ),
-          Hardline.new,
+          body,
           "end"
         )
       when :args
@@ -273,59 +282,85 @@ module Prettyrb
           exit 1
         end
 
-        Join.new(
-          Concat.new(
-            node.children[1],
-            "=",
-            visit(node.children[2]),
-          )
+        # TODO test softline grouping on right side of `=`
+        Group.new(
+          node.children[1],
+          " = ",
+          # IfBreak.new(with_break: "", without_break: " "),
+          # Softline.new,
+          visit(node.children[2]),
         )
       when :lvasgn
         right_blocks = visit node.children[1] if node.children[1]
 
-        Join.new(
-          Concat.new(
-            node.children[0].to_s,
-            "=",
-            right_blocks,
-          ),
+        Concat.new(
+          node.children[0].to_s,
+          " = ",
+          # TODO line break for long lines
+          right_blocks,
         )
       when :send
         if node.infix?
           Group.new(
             Concat.new(
               visit(node.target),
+              " ",
               node.method,
+              " ",
               visit(node.children[2]), # TODO name?
             )
           )
         elsif node.negative?
+          raise "handle negative :send"
+        elsif node.self_target?
+          Join.new(
+            node.method.to_s[0..-2],
+            visit(node.target),
+          )
         else
           arguments = if node.arguments.length > 0
-            SplittableGroup.new(prefix: "(", suffix: ")", joiner: ",", parts: visit_each(node.arguments))
+            Concat.new(
+              "(",
+              Join.new(separator: ",", parts: visit_each(node.arguments)),
+              ")",
+            )
           end
 
-          Join.new(
-            visit(node.target),
-            ".",
-            node.method,
-            arguments,
-          )
+          if node.target
+            Concat.new(
+              visit(node.target),
+              ".",
+              node.method,
+              arguments,
+            )
+          else
+            Concat.new(
+              node.method,
+              arguments,
+            )
+          end
         end
       when :array
         array_nodes = node.children.each_with_object([]) do |child, acc|
-          acc.push visit(child)
+          acc.push Concat.new(Softline.new, visit(child))
         end
 
-        Join.new(
-          SplittableGroup.new(prefix: "[", suffix: "]", joiner: ",", parts: array_nodes),
+        Group.new(
+          "[",
+          Indent.new(
+            Join.new(separator: ",", parts: array_nodes),
+          ),
+          Softline.new,
+          "]"
         )
       when :str
-        Join.new(
+        Concat.new(
           "\"",
           node.format,
           "\"",
         )
+      when :lvar
+        node.children[0].to_s
       when :true, :false, :nil
         node.type.to_s
       else

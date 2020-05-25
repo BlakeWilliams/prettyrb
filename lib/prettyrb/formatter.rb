@@ -21,6 +21,7 @@ module Prettyrb
       )
 
       visitor = Visitor.new(root_node)
+      visitor.visit(root_node)
 
       visitor.output
     end
