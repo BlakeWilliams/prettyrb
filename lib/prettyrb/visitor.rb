@@ -126,6 +126,25 @@ module Prettyrb
 
     def visit(node)
       case node.type
+      when :sclass
+        body = if node.children[1]
+          Concat.new(
+            Indent.new(
+              Hardline.new,
+              visit(node.children[1]),
+            ),
+            Hardline.new,
+          )
+        else
+          Hardline.new
+        end
+
+        Concat.new(
+          "class << ",
+          visit(node.children[0]),
+          body,
+          "end"
+        )
       when :class
         inheritance = if node.children[1]
           Concat.new(
@@ -240,6 +259,31 @@ module Prettyrb
 
           Concat.new(*children)
         end
+      when :defs
+        puts node.inspect
+        args_blocks = visit node.children[2] if node.children[2]
+
+        body = if node.children[3]
+          Concat.new(
+            Indent.new(
+              Hardline.new,
+              visit(node.children[3]),
+            ),
+            Hardline.new,
+          )
+        else
+          Hardline.new
+        end
+
+        Concat.new(
+          "def ",
+          visit(node.children[0]),
+          ".",
+          node.children[1],
+          args_blocks,
+          body,
+          "end"
+        )
       when :def
         args_blocks = visit node.args if node.args
         body_blocks = visit node.body if node.body
@@ -252,6 +296,8 @@ module Prettyrb
             ),
             Hardline.new,
           )
+        else
+          Hardline.new
         end
 
         Group.new(
@@ -269,7 +315,10 @@ module Prettyrb
           Group.new(
             "(",
             Softline.new,
-            *node.children.map(&method(:visit)),
+            Join.new(
+              separator: ",",
+              parts: node.children.map(&method(:visit)),
+            ),
             Softline.new,
             ")"
           )
@@ -359,9 +408,80 @@ module Prettyrb
           node.format,
           "\"",
         )
+      when :alias
+        Concat.new(
+          "alias ",
+          visit(node.children[0]),
+          " ",
+          visit(node.children[1]),
+        )
+      when :sym
+        content = node.children[0].to_s
+
+        # TODO handle already quoted symbols
+        if !VALID_SYMBOLS.include?(content) && !content.match?(/\A[a-zA-Z_]{1}[a-zA-Z0-9_!?=]*\z/)
+          Concat.new(
+            ":",
+            "'",
+            content,
+            "'",
+          )
+        else
+          if node.parent&.type == :pair && node.parent.children[0] == node
+            Concat.new(
+              content,
+              ": ",
+            )
+          else
+            Concat.new(
+              ":",
+              content,
+            )
+          end
+        end
+      when :undef
+        Concat.new(
+          "undef",
+          " ",
+          Join.new(separator: ",", parts: visit_each(node.children))
+        )
+      when :forward_args
+        "(...)"
+      when :forwarded_args
+        "..."
+      when :optarg
+        Concat.new(
+          node.children[0],
+          " = ",
+          visit(node.children[1]),
+        )
+      when :restarg
+        Concat.new(
+          "*",
+          node.children[0],
+        )
+      when :kwarg
+        Concat.new(
+          node.children[0],
+          ":",
+        )
+      when :kwoptarg
+        Concat.new(
+          node.children[0],
+          ": ",
+          visit(node.children[1]),
+        )
+      when :kwrestarg
+        if node.children[0]
+          "**" + node.children[0].to_s
+        else
+          "**"
+        end
+      when :kwnilarg
+        "**nil"
       when :lvar
         node.children[0].to_s
-      when :true, :false, :nil
+      when :true, :false, :nil, :self
         node.type.to_s
       else
         raise "Unexpected node type: #{node.type}"

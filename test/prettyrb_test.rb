@@ -650,6 +650,7 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
     a = 1
+
     class << a
       puts("foo")
     end
@@ -658,10 +659,31 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
-  def test_defs
+  def test_target_defs
+    source = <<~RUBY
+      a = 1
+
+      def a.wow
+        puts "yo"
+      end
+    RUBY
+
+    expected = <<~RUBY
+      a = 1
+
+      def a.wow
+        puts("yo")
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_self_defs
     source = <<~RUBY
     class Hello
       def self.wow
+        puts "yo"
       end
     end
     RUBY
@@ -669,11 +691,12 @@ class PrettyrbTest < Minitest::Test
     expected = <<~RUBY
     class Hello
       def self.wow
+        puts("yo")
       end
     end
     RUBY
 
-    assert_code_formatted(expected, source, skip_rstrip: true)
+    assert_code_formatted(expected, source)
   end
 
   def test_undef
@@ -764,6 +787,20 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
       def foo(bar: 1)
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_kw_rest_arg_with_name
+    source = <<~RUBY
+      def foo(**wow)
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def foo(**wow)
       end
     RUBY
 

@@ -15,70 +15,6 @@ module Prettyrb
 
     def to_s
       case builder
-      # when Join
-      #   last_part = nil
-      #   builder.parts.map do |part|
-      #     if last_part && last_part.class == Hardline
-      #     else
-      #       write_child(part)
-      #     end
-      #     last_part = part
-      #   end.compact.join("")
-      # when MultilineJoin
-      #   builder.parts.map do |part|
-      #     content = write_child(part) if part
-      #
-      #     if content == "\n"
-      #       content
-      #     else
-      #       indent_string + content.lstrip if part
-      #     end
-      #   end.compact.join("\n")
-      # when Concat
-      #   written_parts = builder.parts.each_with_index.map do |part, index|
-      #     next_part = builder.parts[index + 1]
-      #     if !next_part || next_part&.class == Hardline || (write_softline? && next_part &.class == Softline)
-      #       write_child(part)&.gsub(/\A +/, '') if part
-      #     else
-      #       content = write_child(part)&.gsub(/\A +/, '')
-      #       content + " " if content
-      #     end
-      #   end.compact.join("")
-      # when String, Symbol
-      #   builder.to_s
-      # when Indent
-      #   builder.parts.map do |part|
-      #     write_child(part, indent_level: indent_level + 1)
-      #   end.compact.join("")
-      # when Group
-      #   attempt = 0
-      #   loop do
-      #     content = builder.parts.each_with_index.map do |part, index|
-      #       indent_string + write_child(part, group_level: group_level + 1, indent_group_level: indent_group_level + attempt)
-      #     end.compact.join(builder.joiner)
-      #
-      #     if content.length < 100 || attempt > 100 # TODO any line?
-      #       return content
-      #     else
-      #       attempt += 1
-      #     end
-      #   end
-      # when SplittableGroup
-      #   content = builder.prefix + builder.parts.map do |part|
-      #     write_child(part, group_level: group_level + 1)
-      #   end.join(builder.joiner + " ") + builder.suffix
-      #
-      #   if content.length > 100
-      #     [
-      #       builder.prefix,
-      #       builder.parts.map do |part|
-      #         indent_string(extra: 1) + write_child(part, group_level: group_level + 1)
-      #       end.join(builder.joiner + "\n"),
-      #       indent_string + builder.suffix,
-      #     ].join("\n")
-      #   else
-      #     content
-      #   end
       when MultilineJoin
         output = []
 
@@ -92,7 +28,14 @@ module Prettyrb
         output.join("")
       when Join
         separator = break_up? ? builder.separator : builder.separator + " "
-        builder.parts.compact.map { |p| write_child(p) }.compact.join(separator)
+        parts = builder.parts.compact
+
+        output = []
+        parts.each do |part|
+          output << write_child(part)
+          output << separator if part != parts.last
+        end
+        output.join("")
       when Concat
         builder.parts.compact.map { |p| write_child(p) }.compact.join("")
       when Indent
