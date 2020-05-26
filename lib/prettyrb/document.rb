@@ -62,6 +62,7 @@ module Prettyrb
       end
 
       def max_group_depth
+        return 0 if !parts
         return @max_group_depth if defined?(@max_group_depth)
 
         has_groups = parts.any? { |p| p.is_a?(Group) }
@@ -85,11 +86,13 @@ module Prettyrb
 
       def inspect_children(builder, indent_level:)
         if builder.respond_to?(:parts)
-          children = builder.parts.map do |p|
-            inspect_children(p, indent_level: indent_level + 1)
-          end.join("\n")
+          children = if builder.parts
+            builder.parts.map do |p|
+              inspect_children(p, indent_level: indent_level + 1)
+            end.join("\n")
+          end
 
-          "  " * indent_level + "(#{builder.class}\n#{children})"
+          "  " * indent_level + "(#{builder.class}\n#{"  "*indent_level}#{children}\n #{"  " * indent_level})"
         else
           "  " * indent_level + builder.inspect
         end

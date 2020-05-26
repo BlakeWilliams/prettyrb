@@ -1206,6 +1206,7 @@ class PrettyrbTest < Minitest::Test
       ].join(",")
     end
     RUBY
+
     result = Prettyrb::Formatter.new(source).format
 
     assert_equal expected.rstrip, result

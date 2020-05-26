@@ -182,7 +182,6 @@ module Prettyrb
         concat(
           "case",
           arguments,
-          hardline,
           concat(*cases),
           hardline,
           "end"
@@ -197,15 +196,20 @@ module Prettyrb
         end
 
         arguments = if arguments.size > 0
-          join(separator: ",", parts: visit_each(arguments))
+          join(
+            separator: ",",
+            parts: arguments.map do |arg|
+              concat(softline, visit(arg))
+            end
+          )
         end
 
         concat(
-          "when",
+          hardline,
           group(
+            "when",
             if_break(with_break: "", without_break: " "),
             indent(
-              softline,
               arguments,
             ),
           ),
@@ -339,15 +343,13 @@ module Prettyrb
           hardline
         end
 
-        group(
-          concat(
-            "def ",
-            # TODO possible break
-            node.name,
-          ),
+        concat(
+          "def ",
+          # TODO possible break
+          node.name,
           args_blocks,
           body,
-          "end"
+          "end",
         )
       when :args
         if node&.parent&.type == :block
@@ -479,8 +481,7 @@ module Prettyrb
             concat(
               "(",
               indent(
-                softline,
-                join(separator: ",", parts: visit_each(node.arguments)),
+                join(separator: ",", parts: node.arguments.map { |child| concat(softline, visit(child)) }),
                 only_when_break: true,
               ),
               softline,
@@ -518,8 +519,7 @@ module Prettyrb
             "{",
             if_break(without_break: " ", with_break: ""),
             indent(
-              softline,
-              join(separator: ",", parts: visit_each(node.children)),
+              join(separator: ",", parts: node.children.map { |child| concat(softline, visit(child)) }),
               if_break(without_break: " ", with_break: ""),
             ),
             softline,
@@ -568,14 +568,13 @@ module Prettyrb
         elsif node.children[0]&.type == :splat
           visit node.children[0]
         else
-          array_nodes = node.children.each_with_object([]) do |child, acc|
-            acc.push visit(child)
+          array_nodes = node.children.each_with_index.map do |child, index|
+            concat(softline, visit(child))
           end
 
           group(
             "[",
             indent(
-              softline,
               join(separator: ",", parts: array_nodes),
             ),
             softline,
@@ -624,7 +623,7 @@ module Prettyrb
               arguments = if parent.arguments.length > 0
                 concat(
                   "(",
-                  join(separator: ",", parts: visit_each(parent.arguments)),
+                  join(separator: ",", parts: parent.arguments.map { |child| concat(softline, visit(child)) }),
                   ")",
                 )
               end
