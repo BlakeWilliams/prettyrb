@@ -48,9 +48,12 @@ module Prettyrb
       case node.type
       when :module
         body = if node.children[1]
-          indent(
-            hardline,
-            visit(node.children[1]),
+          concat(
+            indent(
+              hardline,
+              visit(node.children[1]),
+            ),
+            hardline
           )
         else
           hardline
@@ -226,15 +229,23 @@ module Prettyrb
 
         (output.reverse + [node.children[1]]).join("::")
       when :or
-        group(
-          concat(
-            visit(node.children[0]),
-            " ||",
-            if_break(with_break: "", without_break: " "),
-            softline,
-            visit(node.children[1]),
-          )
+        builder = concat(
+          visit(node.children[0]),
+          " ||",
+          if_break(with_break: "", without_break: " "),
+          softline,
+          visit(node.children[1]),
         )
+
+        if node.parent&.type == :and || node.parent&.type == :or
+          builder
+        else
+          group(
+            indent(
+              builder
+            )
+          )
+        end
       when :and
         builder = concat(
           visit(node.children[0]),

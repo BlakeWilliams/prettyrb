@@ -133,7 +133,7 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
-  def test_module
+  def empty_test_module
     source = <<~RUBY
     module Foo::Bar::Baz
     end
@@ -141,6 +141,22 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
     module Foo::Bar::Baz
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_module
+    source = <<~RUBY
+    module Foo::Bar::Baz
+      puts "yo"
+    end
+    RUBY
+
+    expected = <<~RUBY
+    module Foo::Bar::Baz
+      puts("yo")
     end
     RUBY
 
