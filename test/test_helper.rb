@@ -4,6 +4,7 @@ SimpleCov.start
 $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
 require "prettyrb"
 
+require "minitest/pride"
 require "minitest/autorun"
 
 def assert_code_formatted(expected, source, skip_rstrip: false)
