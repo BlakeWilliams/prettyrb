@@ -918,6 +918,15 @@ module Prettyrb
           *visit_each(node.children),
           ")"
         )
+      when :next
+        body = if node.children[0]
+          concat(" ", visit(node.children[0]))
+        end
+
+        concat(
+          "next",
+          body
+        )
       when :zsuper
         "super"
       when :block_pass

@@ -5,6 +5,30 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_next_with_arg
+    source = <<~RUBY
+    next 1
+    RUBY
+
+    expected = <<~RUBY
+    next 1
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_next
+    source = <<~RUBY
+    next
+    RUBY
+
+    expected = <<~RUBY
+    next
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_return
     source = <<~RUBY
     return
