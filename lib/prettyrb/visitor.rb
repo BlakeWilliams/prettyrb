@@ -795,7 +795,7 @@ module Prettyrb
         end
       when :kwnilarg
         "**nil"
-      when :lvar, :cvar, :ivar
+      when :lvar, :cvar, :ivar, :gvar
         node.children[0].to_s
       when :true, :false, :nil, :self, :break
         node.type.to_s
