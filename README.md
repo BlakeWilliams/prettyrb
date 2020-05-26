@@ -16,7 +16,7 @@ And then execute:
 
     $ bundle
 
-Or install it yourself as:
+Or install it globally:
 
     $ gem install prettyrb
 
@@ -31,7 +31,7 @@ $ prettyrb format FILE
 or to re-write the file:
 
 ```
-prettyrb format FILE --write
+prettyrb write FILE
 ```
 
 In Ruby code:
@@ -39,6 +39,12 @@ In Ruby code:
 ```ruby
 PrettyRb.new(source_code).format
 ```
+
+## Does it work?
+
+- [x] Formats self and tests still pass
+- [ ] Formats `rais/rails` and tests still pass
+- [ ] Keeps comments
 
 ## License
 
