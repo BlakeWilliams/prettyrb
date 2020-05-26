@@ -260,6 +260,20 @@ module Prettyrb
         end
       when :int
         node.children[0].to_s
+      when :return
+        if node.children[0]
+          group(
+            "return",
+            if_break(without_break: " ", with_break: ""),
+            indent(
+              softline,
+              visit(node.children[0]),
+              only_when_break: true
+            )
+          )
+        else
+          "return"
+        end
       when :block
         args = if node.children[1]&.children&.length > 0
           concat(
