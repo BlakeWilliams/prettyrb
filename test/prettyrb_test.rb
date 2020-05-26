@@ -5,6 +5,26 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_defs_are_multilined
+    source = <<~RUBY
+    def foo
+    end
+
+    def bar
+    end
+    RUBY
+
+    expected = <<~RUBY
+    def foo
+    end
+
+    def bar
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_nested_begin
     source = <<~RUBY
     def foo

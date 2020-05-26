@@ -28,15 +28,6 @@ module Prettyrb
 
     private
 
-    def format_type(node, indentation)
-      case node.node_type
-      when :if
-        IfFormatter.new(node, indentation).format
-      else
-        raise "can't handle #{node}"
-      end
-    end
-
     attr_reader :code
   end
 end

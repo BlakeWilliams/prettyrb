@@ -55,8 +55,6 @@ module Prettyrb
             ),
             hardline
           )
-        else
-          hardline
         end
 
         concat(
@@ -74,8 +72,6 @@ module Prettyrb
             ),
             hardline,
           )
-        else
-          hardline
         end
 
         concat(
@@ -115,8 +111,6 @@ module Prettyrb
               visit(node.body_node),
             ),
           )
-        else
-          hardline
         end
 
         elsifs = if node.has_elsif?
@@ -304,8 +298,10 @@ module Prettyrb
             children << visit(child)
 
             next_child = node.children[index + 1]
+            excluded_types = [:class, :module, :sclass, :def, :defs]
 
-            if next_child&.type != child.type && node.children.last != child
+            if (excluded_types.include?(child.type) && node.children.last != child) ||
+                (next_child&.type != child.type && node.children.last != child)
               children << hardline(count: 2)
             elsif node.children.last != child
               children << hardline
