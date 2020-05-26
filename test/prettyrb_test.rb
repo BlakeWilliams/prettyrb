@@ -1197,7 +1197,6 @@ class PrettyrbTest < Minitest::Test
     end
     RUBY
 
-    # TODO fix awkward method call
     expected = <<~RUBY
     def rad
       hello = [
