@@ -258,7 +258,7 @@ module Prettyrb
             )
           )
         end
-      when :int
+      when :int, :float
         node.children[0].to_s
       when :return
         if node.children[0]

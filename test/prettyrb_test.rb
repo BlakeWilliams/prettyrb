@@ -5,6 +5,18 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_support_float
+    source = <<~RUBY
+    puts 1.1.to_s
+    RUBY
+
+    expected = <<~RUBY
+    puts(1.1.to_s)
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_next_with_arg
     source = <<~RUBY
     next 1
