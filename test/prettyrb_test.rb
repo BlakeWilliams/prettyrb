@@ -5,6 +5,74 @@ class PrettyrbTest < Minitest::Test
     refute_nil ::Prettyrb::VERSION
   end
 
+  def test_long_ternary
+    source = <<~RUBY
+    really_really_long_method_call ? true_method_call_that_is_also_really_really_long : else_method_call_that_is_also_really_long
+    RUBY
+
+    expected = <<~RUBY
+    really_really_long_method_call
+      ? true_method_call_that_is_also_really_really_long
+      : else_method_call_that_is_also_really_long
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_ternary
+    source = <<~RUBY
+    foo ? false : true
+    RUBY
+
+    expected = <<~RUBY
+    foo ? false : true
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_op_asgn
+    source = <<~RUBY
+    a += 1
+    RUBY
+
+    expected = <<~RUBY
+    a += 1
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_yield
+    source = <<~RUBY
+      yield
+      yield 1
+    RUBY
+
+    expected = <<~RUBY
+      yield
+      yield 1
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_blockarg
+    source = <<~RUBY
+    def foo(&block)
+      bar(&block)
+    end
+    RUBY
+
+    expected = <<~RUBY
+    def foo(&block)
+      bar(&block)
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_support_float
     source = <<~RUBY
     puts 1.1.to_s

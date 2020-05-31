@@ -2,10 +2,6 @@ module Prettyrb
   class Visitor
     include Document::DSL
 
-    MAX_LENGTH = 100
-    SINGLE_LINE = "single_line"
-    MULTI_LINE = "multi_line"
-
     FNAMES = [
       "..",
       "|",
@@ -53,7 +49,6 @@ module Prettyrb
               hardline,
               visit(node.children[1]),
             ),
-            hardline
           )
         end
 
@@ -61,6 +56,7 @@ module Prettyrb
           "module ",
           visit(node.children[0]),
           body,
+          hardline,
           "end"
         )
       when :sclass
@@ -104,55 +100,71 @@ module Prettyrb
           "end"
         )
       when :if
-        body = if node.body_node
-          concat(
+        if node.ternary?
+          group(
             indent(
-              hardline,
+              visit(node.conditions),
+              softline,
+              if_break(without_break: " ", with_break: ""),
+              "? ",
               visit(node.body_node),
-            ),
+              softline,
+              if_break(without_break: " ", with_break: ""),
+              ": ",
+              visit(node.else_body_node),
+            )
           )
-        end
-
-        elsifs = if node.has_elsif?
-          [hardline] + node.elsif_branches.map do |elsif_branch|
+        else
+          body = if node.body_node
             concat(
-              "elsif ",
-              visit(elsif_branch.conditions),
               indent(
                 hardline,
-                visit(elsif_branch.body_node)
+                visit(node.body_node),
+              ),
+            )
+          end
+
+          elsifs = if node.has_elsif?
+            [hardline] + node.elsif_branches.map do |elsif_branch|
+              concat(
+                "elsif ",
+                visit(elsif_branch.conditions),
+                indent(
+                  hardline,
+                  visit(elsif_branch.body_node)
+                ),
+                hardline,
+              )
+            end
+          end
+
+          else_content = if node.else_branch
+            starting_newline = if !node.has_elsif?
+              hardline
+            end
+            concat(
+              starting_newline,
+              "else",
+              indent(
+                hardline,
+                visit(node.else_branch)
               ),
               hardline,
             )
-          end
-        end
-
-        else_content = if node.else_branch
-          starting_newline = if !node.has_elsif?
+          else
             hardline
           end
-          concat(
-            starting_newline,
-            "else",
-            indent(
-              hardline,
-              visit(node.else_branch)
-            ),
-            hardline,
-          )
-        else
-          hardline
-        end
 
-        concat(
-          node.unless_node? ? "unless" : "if",
-          " ",
-          visit(node.conditions),
-          body,
-          *elsifs,
-          else_content,
-          "end"
-        )
+          concat(
+            node.unless_node? ? "unless" : "if",
+            " ",
+            visit(node.conditions),
+            body,
+            *elsifs,
+            else_content,
+            "end"
+          )
+        end
       when :case
         arguments = if node.children[0]
           concat(
@@ -669,7 +681,8 @@ module Prettyrb
             method_calls,
             hardline(skip_indent: true),
             node.heredoc_body,
-            node.heredoc_identifier
+            node.heredoc_identifier,
+            hardline,
           )
         elsif node.percent_string?
           body = node.children.map do |child|
@@ -912,6 +925,12 @@ module Prettyrb
           "$",
           node.children[0].to_s,
         )
+      when :op_asgn
+        concat(
+          visit(node.children[0]),
+          " += ",
+          visit(node.children[2]),
+        )
       when :super
         concat(
           "super(",
@@ -931,6 +950,17 @@ module Prettyrb
         "super"
       when :block_pass
         concat("&", visit(node.children[0]))
+      when :blockarg
+        concat(
+          "&",
+          node.children[0]
+        )
+      when :yield
+        if node.children[0]
+          concat("yield ", visit(node.children[0]))
+        else
+          "yield"
+        end
       else
         raise "Unexpected node type: #{node.type}"
       end

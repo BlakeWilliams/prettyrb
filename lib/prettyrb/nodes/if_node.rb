@@ -15,6 +15,10 @@ module Prettyrb
         children[0]
       end
 
+      def ternary?
+        loc.is_a?(Parser::Source::Map::Ternary)
+      end
+
       def body_node
         if unless_node?
           children[2]
