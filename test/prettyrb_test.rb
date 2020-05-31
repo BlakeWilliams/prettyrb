@@ -11,9 +11,9 @@ class PrettyrbTest < Minitest::Test
     RUBY
 
     expected = <<~RUBY
-    really_really_long_method_call
-      ? true_method_call_that_is_also_really_really_long
-      : else_method_call_that_is_also_really_long
+    really_really_long_method_call ?
+      true_method_call_that_is_also_really_really_long :
+      else_method_call_that_is_also_really_long
     RUBY
 
     assert_code_formatted(expected, source)

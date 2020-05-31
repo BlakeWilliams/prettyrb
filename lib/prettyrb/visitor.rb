@@ -104,13 +104,13 @@ module Prettyrb
           group(
             indent(
               visit(node.conditions),
-              softline,
+              " ?",
               if_break(without_break: " ", with_break: ""),
-              "? ",
+              softline,
               visit(node.body_node),
-              softline,
+              " :",
               if_break(without_break: " ", with_break: ""),
-              ": ",
+              softline,
               visit(node.else_body_node),
             )
           )
