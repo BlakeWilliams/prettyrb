@@ -11,6 +11,10 @@ module Prettyrb
       def: Prettyrb::Nodes::DefNode,
     }.freeze
 
+    def string_value(token)
+      value(token)
+    end
+
     def n(type, children, source_map)
       node_class = NODE_TYPES.fetch(type, Prettyrb::Nodes::BaseNode)
 
