@@ -544,6 +544,22 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_heredoc_with_method_call_in_method_call
+    source = <<~RUBY
+      hello(<<~TEST.strip)
+        foo
+      TEST
+    RUBY
+
+    expected = <<~RUBY
+      hello(<<~TEST.strip)
+        foo
+      TEST
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_heredoc_in_method_call
     source = <<~RUBY
       hello(<<~TEST)

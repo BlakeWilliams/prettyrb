@@ -38,6 +38,32 @@ module Prettyrb
       def heredoc?
         !!loc.respond_to?(:heredoc_body)
       end
+
+      def send_argument?
+        parent = top_level_send_argument&.parent
+
+        if parent
+          parent.type == :send && parent.to_a.index(top_level_send_argument) > 1
+        else
+          false
+        end
+      end
+
+      private
+
+      def top_level_send_argument
+        top_level_node = self
+
+        while top_level_node&.parent&.type == :send
+          if top_level_node.parent.type == :send && top_level_node.parent.target == top_level_node
+            top_level_node = top_level_node.parent
+          else
+            break
+          end
+        end
+
+        top_level_node
+      end
     end
   end
 end

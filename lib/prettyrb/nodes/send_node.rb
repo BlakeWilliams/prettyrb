@@ -53,13 +53,28 @@ module Prettyrb
         false
       end
 
+      def heredoc_target
+        child_target = target
+
+        while child_target
+          return child_target if child_target.is_a?(StrNode) || child_target.is_a?(DstrNode)
+          child_target = child_target.target
+        end
+
+        nil
+      end
+
       def heredoc_arguments?
         heredoc_arguments.any?
       end
 
       def heredoc_arguments
-        arguments.select do |child|
-          child.string? && child.heredoc? || (child.type == :send && child.called_on_heredoc?)
+        arguments.each_with_object([]) do |child, args|
+          if child.string? && child.heredoc?
+            args << child
+          elsif child.type == :send && child.called_on_heredoc?
+            args << child.heredoc_target
+          end
         end
       end
     end
