@@ -54,7 +54,11 @@ module Prettyrb
       end
 
       def heredoc_arguments?
-        arguments.any? do |child|
+        heredoc_arguments.any?
+      end
+
+      def heredoc_arguments
+        arguments.select do |child|
           child.string? && child.heredoc? || (child.type == :send && child.called_on_heredoc?)
         end
       end

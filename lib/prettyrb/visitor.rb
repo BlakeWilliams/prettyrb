@@ -528,6 +528,14 @@ module Prettyrb
             node.method
           end
 
+          heredoc_args = node.heredoc_arguments.map do |heredoc_arg|
+            concat(
+              hardline,
+              heredoc_arg.heredoc_body,
+              heredoc_arg.heredoc_identifier,
+            )
+          end
+
           if node.target
             concat(
               visit(node.target),
@@ -535,14 +543,16 @@ module Prettyrb
               method,
               group(
                 arguments,
-              )
+              ),
+              *heredoc_args,
             )
           else
             concat(
               method,
               group(
                 arguments,
-              )
+              ),
+              *heredoc_args,
             )
           end
         end
@@ -674,16 +684,25 @@ module Prettyrb
             concat(*method_calls)
           end
 
-          concat(
-            "<<",
-            node.heredoc_type,
-            node.heredoc_identifier,
-            method_calls,
-            hardline(skip_indent: true),
-            node.heredoc_body,
-            node.heredoc_identifier,
-            hardline,
-          )
+          if node.send_argument?
+            concat(
+              "<<",
+              node.heredoc_type,
+              node.heredoc_identifier,
+              method_calls,
+            )
+          else
+            concat(
+              "<<",
+              node.heredoc_type,
+              node.heredoc_identifier,
+              method_calls,
+              hardline(skip_indent: true),
+              node.heredoc_body,
+              node.heredoc_identifier,
+              hardline,
+            )
+          end
         elsif node.percent_string?
           body = node.children.map do |child|
             if child.is_a?(String)
