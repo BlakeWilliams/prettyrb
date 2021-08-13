@@ -4,34 +4,42 @@ module Prettyrb
       def concat(*args)
         Document::Concat.new(*args)
       end
+      ruby2_keywords(:concat) if respond_to?(:ruby2_keywords, true)
 
       def join(*args)
         Document::Join.new(*args)
       end
+      ruby2_keywords(:join) if respond_to?(:ruby2_keywords, true)
 
       def group(*args)
         Document::Group.new(*args)
       end
+      ruby2_keywords(:group) if respond_to?(:ruby2_keywords, true)
 
       def if_break(*args)
         Document::IfBreak.new(*args)
       end
+      ruby2_keywords(:if_break) if respond_to?(:ruby2_keywords, true)
 
       def indent(*args)
         Document::Indent.new(*args)
       end
+      ruby2_keywords(:indent) if respond_to?(:ruby2_keywords, true)
 
       def dedent(*args)
         Document::Dedent.new(*args)
       end
+      ruby2_keywords(:dedent) if respond_to?(:ruby2_keywords, true)
 
       def hardline(*args)
         Document::Hardline.new(*args)
       end
+      ruby2_keywords(:hardline) if respond_to?(:ruby2_keywords, true)
 
       def softline(*args)
         Document::Softline.new(*args)
       end
+      ruby2_keywords(:softline) if respond_to?(:ruby2_keywords, true)
     end
 
     class Builder
