@@ -418,6 +418,12 @@ module Prettyrb
         end
       when :arg
         node.children[0]
+      when :gvasgn
+        concat(
+          node.children[0],
+          " = ",
+          visit(node.children[-1])
+        )
       when :masgn
         concat(
           visit(node.children[0]),
@@ -793,10 +799,15 @@ module Prettyrb
           visit(node.children[0])
         )
       when :splat
-        concat(
-          "*",
-          visit(node.children[0])
-        )
+        # Handles solo `*`, e.g. `*, foo = [1,2]`
+        if node.children[0].nil?
+          concat("*")
+        else
+          concat(
+            "*",
+            visit(node.children[0])
+          )
+        end
       when :undef
         concat(
           "undef",

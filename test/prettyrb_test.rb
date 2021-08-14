@@ -459,6 +459,18 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_gvasgn
+    source = <<~RUBY
+    $foo = 1
+    RUBY
+
+    expected = <<~RUBY
+    $foo = 1
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_cvar
     source = <<~RUBY
       puts @@rad
