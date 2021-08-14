@@ -295,17 +295,27 @@ module Prettyrb
           )
         end
 
-        concat(
-          visit(node.children[0]),
-          " do",
-          args,
-          indent(
+        # Empty block. e.g. `draw {}``
+        if node.children[2].nil?
+          concat(
+            visit(node.children[0]),
+            " { ",
+            args,
+            "}",
+          )
+        else
+          concat(
+            visit(node.children[0]),
+            " do",
+            args,
+            indent(
+              hardline,
+              visit(node.children[2]),
+            ),
             hardline,
-            visit(node.children[2]),
-          ),
-          hardline,
-          "end",
-        )
+            "end",
+          )
+        end
       when :begin
         needs_parens = (node.parent&.type == :if && node.parent.children[0] == node) ||
           node.parent&.type == :or ||
@@ -895,7 +905,9 @@ module Prettyrb
             body,
           )
         )
-      when :while
+      when :while, :until
+        keyword = node.type
+
         args = if node.children[0]
           concat(
             " ",
@@ -911,7 +923,7 @@ module Prettyrb
         end
 
         concat(
-          "while",
+          node.type.to_s,
           args,
           body,
           hardline,

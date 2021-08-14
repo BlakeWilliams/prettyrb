@@ -199,6 +199,20 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_until
+    source = <<~RUBY
+    until 1
+    end
+    RUBY
+
+    expected = <<~RUBY
+    until 1
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_erange
     source = <<~RUBY
     1...3
@@ -262,6 +276,18 @@ class PrettyrbTest < Minitest::Test
     foo do
       puts("yo")
     end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_empty_block
+    source = <<~RUBY
+    foo { }
+    RUBY
+
+    expected = <<~RUBY
+    foo { }
     RUBY
 
     assert_code_formatted(expected, source)
