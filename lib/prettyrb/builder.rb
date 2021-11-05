@@ -21,4 +21,6 @@ module Prettyrb
       node_class.new(type, children, location: source_map)
     end
   end
+
+  Builder.emit_kwargs = true
 end

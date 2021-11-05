@@ -587,6 +587,16 @@ module Prettyrb
         else
           "{}"
         end
+      when :kwargs
+        if node.children.length > 0
+          group(
+            indent(
+              join(separator: ",", parts: node.children.map { |child| concat(softline, visit(child)) }),
+            ),
+          )
+        else
+          "{}"
+        end
       when :pair
         if node.children[0].type == :sym
           concat(

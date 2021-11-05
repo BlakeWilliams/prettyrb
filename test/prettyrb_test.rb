@@ -501,7 +501,7 @@ class PrettyrbTest < Minitest::Test
     RUBY
 
     expected = <<~RUBY
-    delegate(:foo=, { to: :bar })
+    delegate(:foo=, to: :bar)
     RUBY
 
     assert_code_formatted(expected, source)
@@ -1442,6 +1442,19 @@ class PrettyrbTest < Minitest::Test
 
     result = Prettyrb::Formatter.new(source).format
 
+    assert_equal expected.rstrip, result
+  end
+
+  def test_kwarg_method_call
+    source = <<~RUBY
+      foo(bar: 1, baz: 2)
+    RUBY
+
+    expected = <<~RUBY
+      foo(bar: 1, baz: 2)
+    RUBY
+
+    result = Prettyrb::Formatter.new(source).format
     assert_equal expected.rstrip, result
   end
 end
