@@ -4,8 +4,6 @@ module Prettyrb
   class Writer
     extend Forwardable
 
-    def_delegators :@writer, :indent_level
-
     def initialize(builder, indent_level: 0, max_length: Prettyrb::MAX_LINE_LENGTH, force_break: false)
       @builder = builder
       @writer = writer

@@ -917,8 +917,6 @@ module Prettyrb
           )
         )
       when :while, :until
-        keyword = node.type
-
         args = if node.children[0]
           concat(
             " ",

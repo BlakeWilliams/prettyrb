@@ -16,10 +16,6 @@ module Prettyrb
     end
 
     def test_max_group_depth_returns_nested_count
-      nested_group = Document::Group.new("foo")
-      first_group = Document::Group.new("foo", nested_group)
-      second_group = Document::Group.new("bar")
-
       builder = Document::Concat.new(
         Document::Group.new(
           Document::Group.new(

@@ -24,6 +24,5 @@ require "prettyrb/writer"
 require "prettyrb/cli"
 
 module Prettyrb
-  MAX_LINE_LENGTH = 100
   class Error < StandardError; end
 end

@@ -121,7 +121,7 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
-  def test_return
+  def test_return_value
     source = <<~RUBY
     return 1
     RUBY
@@ -353,7 +353,7 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
-  def test_while
+  def test_while_content
     source = <<~RUBY
       while 1
         puts "hey"
