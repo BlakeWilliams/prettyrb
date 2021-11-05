@@ -748,11 +748,19 @@ module Prettyrb
             node.closing_delimiter,
           )
         else
-          concat(
-            "\"",
-            node.format,
-            "\"",
-          )
+          if node.includes_escapes? && node.is_single_quoted?
+            concat(
+              "'",
+              node.format,
+              "'",
+            )
+          else
+            concat(
+              "\"",
+              node.format,
+              "\"",
+            )
+          end
         end
       when :alias
         concat(

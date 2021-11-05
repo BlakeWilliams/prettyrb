@@ -1457,4 +1457,17 @@ class PrettyrbTest < Minitest::Test
     result = Prettyrb::Formatter.new(source).format
     assert_equal expected.rstrip, result
   end
+
+  def test_single_quote_escapes
+    source = <<~RUBY
+      'omg \S\t'
+    RUBY
+
+    expected = <<~RUBY
+      'omg \S\t'
+    RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
 end
