@@ -13,6 +13,10 @@ module Prettyrb
         loc.expression.source[1] == "'"
       end
 
+      def is_single_char?
+        loc.expression.source[0] == "?"
+      end
+
       def content
         raw_content = loc.expression.source
         content = raw_content[1...-1]

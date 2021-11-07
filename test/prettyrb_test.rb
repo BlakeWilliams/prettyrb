@@ -684,6 +684,18 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_inline_rescue
+    source = <<~RUBY
+    foo rescue Exception
+    RUBY
+
+    expected = <<~RUBY
+    foo rescue Exception
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_begin_rescue
     source = <<~RUBY
     begin

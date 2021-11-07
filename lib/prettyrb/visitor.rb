@@ -870,45 +870,61 @@ module Prettyrb
           visit(node.children[1]),
         )
       when :rescue
-        concat(
-          visit(node.children[0]),
-          dedent(
-            hardline,
+        if node.children[1].children[1] == nil
+          concat(
+            visit(node.children[0]),
+            " ",
             visit(node.children[1])
           )
-        )
+        else
+          concat(
+            visit(node.children[0]),
+            dedent(
+              hardline,
+              visit(node.children[1])
+            )
+          )
+        end
       when :resbody
         args = node.children[0]
         assignment = node.children[1]
         body = node.children[2]
 
-        arguments = if args
+        if args.nil? && assignment.nil?
           concat(
+            "rescue",
             " ",
-            visit(args),
+            visit(body),
           )
-        end
+        else
+          arguments = if args
+            concat(
+              " ",
+              visit(args),
+            )
+          end
 
-        argument_assignment = if assignment
+          argument_assignment = if assignment
+            concat(
+              " => ",
+              visit(assignment)
+            )
+          end
+
+          body = if body
+            visit(body)
+          end
+
           concat(
-            " => ",
-            visit(assignment)
+            "rescue",
+            arguments,
+            argument_assignment,
+            indent(
+              hardline,
+              body,
+            )
           )
         end
-
-        body = if body
-          visit(body)
-        end
-
-        concat(
-          "rescue",
-          arguments,
-          argument_assignment,
-          indent(
-            hardline,
-            body,
-          )
-        )
       when :while, :until
         args = if node.children[0]
           concat(
@@ -967,7 +983,12 @@ module Prettyrb
       when :super
         concat(
           "super(",
-          *visit_each(node.children),
+          join(
+            separator: ",",
+            parts: node.children.map do |arg|
+              concat(softline, visit(arg))
+            end
+          ),
           ")"
         )
       when :next
