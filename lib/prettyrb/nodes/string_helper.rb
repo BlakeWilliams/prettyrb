@@ -2,17 +2,30 @@ module Prettyrb
   module Nodes
     module StringHelper
       HEREDOC_TYPE_REGEX = /<<([~-])?/
+      SPECIFIER_REGEX = /[a-zA-Z]/
 
       def percent_string?
         loc.expression.source.start_with?("%")
       end
 
+      def has_specifier?
+        loc.expression.source[1].match?(SPECIFIER_REGEX)
+      end
+
       def percent_character
-        loc.expression.source[1]
+        if has_specifier?
+          loc.expression.source[1]
+        else
+          ""
+        end
       end
 
       def start_delimiter
-        loc.expression.source[2]
+        if has_specifier?
+          loc.expression.source[2]
+        else
+          loc.expression.source[1]
+        end
       end
 
       def closing_delimiter

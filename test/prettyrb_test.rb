@@ -1551,4 +1551,43 @@ class PrettyrbTest < Minitest::Test
     result = Prettyrb::Formatter.new(source).format
     assert_equal expected.rstrip, result
   end
+
+  def test_namespaced_values
+    source = <<~RUBY
+      type_klass::SET.symbols
+    RUBY
+
+    expected = <<~RUBY
+      type_klass::SET.symbols
+    RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
+
+  def test_build_array
+    source = <<~RUBY
+      [*arr, nil].each_with_index.to_h.freeze
+    RUBY
+
+    expected = <<~RUBY
+      [*arr, nil].each_with_index.to_h.freeze
+    RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
+
+  def test_string_percent_interpolation
+    source = <<~RUBY
+      %(\#{key}="\#{key}")
+    RUBY
+
+    expected = <<~RUBY
+      %(\#{key}="\#{key}")
+    RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
 end

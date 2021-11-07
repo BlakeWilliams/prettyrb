@@ -228,7 +228,7 @@ module Prettyrb
         output = []
 
         child = node.children[0]
-        while child&.type == :const || child&.type == :cbase
+        while child&.type == :const || child&.type == :cbase || child&.type == :send
           output << child.children[1]
           child = child.children[0]
         end
@@ -317,34 +317,42 @@ module Prettyrb
           )
         end
       when :begin
-        needs_parens = (node.parent&.type == :if && node.parent.children[0] == node) ||
-          node.parent&.type == :or ||
-          node.parent&.type == :and ||
-          node.parent&.type == :send
-
-        if needs_parens
+        if node.parent&.type == :dstr
           concat(
-            "(",
-            *visit_each(node.children), # TODO Split or softline?
-            ")"
+            '#{',
+            visit(node.children[0]),
+            "}",
           )
         else
-          children = []
-          node.children.each_with_index do |child, index|
-            children << visit(child)
+          needs_parens = (node.parent&.type == :if && node.parent.children[0] == node) ||
+            node.parent&.type == :or ||
+            node.parent&.type == :and ||
+            node.parent&.type == :send
 
-            next_child = node.children[index + 1]
-            excluded_types = [:class, :module, :sclass, :def, :defs]
+          if needs_parens
+            concat(
+              "(",
+              *visit_each(node.children), # TODO Split or softline?
+              ")"
+            )
+          else
+            children = []
+            node.children.each_with_index do |child, index|
+              children << visit(child)
 
-            if (excluded_types.include?(child.type) && node.children.last != child) ||
-                (next_child&.type != child.type && node.children.last != child)
-              children << hardline(count: 2)
-            elsif node.children.last != child
-              children << hardline
+              next_child = node.children[index + 1]
+              excluded_types = [:class, :module, :sclass, :def, :defs]
+
+              if (excluded_types.include?(child.type) && node.children.last != child) ||
+                  (next_child&.type != child.type && node.children.last != child)
+                children << hardline(count: 2)
+              elsif node.children.last != child
+                children << hardline
+              end
             end
-          end
 
-          concat(*children)
+            concat(*children)
+          end
         end
       when :defs
         args_blocks = visit node.children[2] if node.children[2]
@@ -634,7 +642,7 @@ module Prettyrb
       when :array
         if node.parent&.type == :resbody
           join(separator: ",", parts: visit_each(node.children))
-        elsif node.children[0]&.type == :splat
+        elsif node.children[0]&.type == :splat && node.parent&.type != :send
           visit node.children[0]
         else
           array_nodes = node.children.each_with_index.map do |child, index|
@@ -922,15 +930,11 @@ module Prettyrb
             )
           )
         else
-          begin
           concat(
             "rescue",
             " ",
             visit(body),
           )
-        rescue
-          require 'pry';binding.pry
-        end
         end
       when :while, :until
         args = if node.children[0]
