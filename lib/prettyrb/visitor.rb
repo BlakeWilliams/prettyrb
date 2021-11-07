@@ -439,7 +439,7 @@ module Prettyrb
           visit(node.children[-1])
         )
       when :mlhs
-        if node.parent&.type == :mlhs
+        if node.parent&.type == :mlhs || node.parent&.type == :args
           concat(
             "(",
             join(separator: ",", parts: visit_each(node.children)),
@@ -859,8 +859,9 @@ module Prettyrb
         concat(
           "begin",
           indent(
-            hardline,
-            visit(node.children[0])
+            *node.children.map do |child|
+              concat(hardline, visit(child))
+            end,
           ),
           hardline,
           "end"
@@ -982,7 +983,7 @@ module Prettyrb
       when :op_asgn
         concat(
           visit(node.children[0]),
-          " += ",
+          " #{node.children[1]}= ",
           visit(node.children[2]),
         )
       when :super
@@ -1019,7 +1020,13 @@ module Prettyrb
           concat(
             "yield",
             "(",
-            visit(node.children[0]),
+            join(
+              separator: ",",
+              parts: node.children.map do |child|
+                concat(softline, visit(child))
+              end
+            ),
+            softline,
             ")",
             softline,
           )

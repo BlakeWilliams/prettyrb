@@ -43,15 +43,29 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_op_asgn_negative
+    source = <<~RUBY
+    a -= 1
+    RUBY
+
+    expected = <<~RUBY
+    a -= 1
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_yield
     source = <<~RUBY
       yield
       yield 1
+      yield 1, 2 , 3
     RUBY
 
     expected = <<~RUBY
       yield
       yield(1)
+      yield(1, 2, 3)
     RUBY
 
     assert_code_formatted(expected, source)
@@ -1589,5 +1603,43 @@ class PrettyrbTest < Minitest::Test
 
     result = Prettyrb::Formatter.new(source).format
     assert_equal expected.rstrip, result
+  end
+
+  def test_multiple_line_begin
+    source = <<~RUBY
+    begin
+      foo
+      bar
+      baz
+    end
+    RUBY
+
+    # TODO: Remove unnecessary whitespace in empty rescue
+    expected = <<~RUBY
+    begin
+      foo
+      bar
+      baz
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_block_with_extracted_values
+    source = <<~RUBY
+      {}.each do |foo, (bar, baz)|
+        1
+      end
+    RUBY
+
+    # TODO: Remove unnecessary whitespace in empty rescue
+    expected = <<~RUBY
+      {}.each do |foo, (bar, baz)|
+        1
+      end
+    RUBY
+
+    assert_code_formatted(expected, source)
   end
 end
