@@ -696,6 +696,18 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_inline_rescue_nil
+    source = <<~RUBY
+    foo rescue nil
+    RUBY
+
+    expected = <<~RUBY
+    foo rescue nil
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_begin_rescue
     source = <<~RUBY
     begin
@@ -713,6 +725,26 @@ class PrettyrbTest < Minitest::Test
       false
     rescue Exception => e
       true
+    end
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
+  def test_complex_rescue
+    source = <<~RUBY
+    begin
+      routes = defined?(@controller) && @controller.respond_to?(:_routes) && @controller._routes
+    rescue
+    end
+    RUBY
+
+    # TODO: Remove unnecessary whitespace in empty rescue
+    expected = <<~RUBY
+    begin
+      routes = defined?(@controller) && @controller.respond_to?(:_routes) && @controller._routes
+    rescue
+      
     end
     RUBY
 
@@ -1503,6 +1535,19 @@ class PrettyrbTest < Minitest::Test
     expected = <<~RUBY
       ?/
     RUBY
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
+
+  def test_and_dot_method
+    source = <<~RUBY
+      foo&.omg(1, 2, 3)
+    RUBY
+
+    expected = <<~RUBY
+      foo&.omg(1, 2, 3)
+    RUBY
+
     result = Prettyrb::Formatter.new(source).format
     assert_equal expected.rstrip, result
   end

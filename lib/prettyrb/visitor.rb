@@ -469,7 +469,7 @@ module Prettyrb
             node.children[0].to_s,
           )
         end
-      when :send
+      when :send, :csend
         if node.called_on_heredoc?
           visit node.target
         elsif node.array_assignment?
@@ -555,7 +555,7 @@ module Prettyrb
           if node.target
             concat(
               visit(node.target),
-              ".",
+              node.type == :send ? "." : "&.",
               method,
               group(
                 arguments,
@@ -870,13 +870,7 @@ module Prettyrb
           visit(node.children[1]),
         )
       when :rescue
-        if node.children[1].children[1] == nil
-          concat(
-            visit(node.children[0]),
-            " ",
-            visit(node.children[1])
-          )
-        else
+        if node.parent&.type == :kwbegin || node.parent&.type == :def
           concat(
             visit(node.children[0]),
             dedent(
@@ -884,19 +878,22 @@ module Prettyrb
               visit(node.children[1])
             )
           )
+        else
+          concat(
+            visit(node.children[0]),
+            " ",
+            visit(node.children[1])
+          )
         end
       when :resbody
         args = node.children[0]
         assignment = node.children[1]
         body = node.children[2]
 
-        if args.nil? && assignment.nil?
-          concat(
-            "rescue",
-            " ",
-            visit(body),
-          )
-        else
+        # used to determine if we should inline the call or not
+        parent_parent = node&.parent&.parent 
+
+        if parent_parent&.type == :kwbegin || parent_parent&.type == :def
           arguments = if args
             concat(
               " ",
@@ -924,6 +921,16 @@ module Prettyrb
               body,
             )
           )
+        else
+          begin
+          concat(
+            "rescue",
+            " ",
+            visit(body),
+          )
+        rescue
+          require 'pry';binding.pry
+        end
         end
       when :while, :until
         args = if node.children[0]
@@ -946,12 +953,6 @@ module Prettyrb
           body,
           hardline,
           "end",
-        )
-      when :csend
-        concat(
-          visit(node.children[0]),
-          "&.", # TODO softbreak
-          node.children[1]
         )
       when :erange
         right_side = visit(node.children[1]) if node.children[1]

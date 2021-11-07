@@ -1,6 +1,6 @@
 module Prettyrb
   module Nodes
-    class SendNode < BaseNode
+    class CsendNode < BaseNode
       include SendMethods
     end
   end

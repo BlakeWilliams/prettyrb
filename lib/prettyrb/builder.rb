@@ -6,6 +6,7 @@ module Prettyrb
       if: Prettyrb::Nodes::IfNode,
       or: Prettyrb::Nodes::OrNode,
       regexp: Prettyrb::Nodes::RegexpNode,
+      csend: Prettyrb::Nodes::SendNode,
       send: Prettyrb::Nodes::SendNode,
       str: Prettyrb::Nodes::StrNode,
       def: Prettyrb::Nodes::DefNode,
