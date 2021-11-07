@@ -20,7 +20,11 @@ module Prettyrb
 
       def format
         raw_content = loc.expression.source
-        content = raw_content[1...-1]
+        content = if StrNode::STRING_WRAPPERS.include?(raw_content[0])
+          raw_content[1...-1]
+        else
+          raw_content
+        end
 
         if raw_content[0] == "'"
           content.gsub('"', '\\"').gsub('#{', '\\#{')

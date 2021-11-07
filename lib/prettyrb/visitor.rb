@@ -653,35 +653,8 @@ module Prettyrb
       when :regopt
         node.children.map(&:to_s).join("")
       when :regexp
-        content = node.children[0...-1].map do |child|
-          if child.type == :str
-            child.children[0].to_s
-          else
-            visit child
-          end
-        end
-
-        options = if node.children[-1]
-          visit node.children[-1]
-        end
-
-        if node.percent?
-          concat(
-            "%",
-            node.percent_type,
-            node.start_delimiter,
-            *content,
-            node.end_delimiter,
-            options,
-          )
-        else
-          concat(
-            "/",
-            *content,
-            "/",
-            options,
-          )
-        end
+        # Regexp is difficult to format, keep as-is for now
+        node.loc.expression.source
       when :str, :dstr
         if node.heredoc?
           method_calls = if node.parent&.type == :send
@@ -754,6 +727,8 @@ module Prettyrb
               node.format,
               "'",
             )
+          elsif node.is_single_char?
+            node.loc.expression.source
           else
             concat(
               "\"",
@@ -1015,7 +990,13 @@ module Prettyrb
         )
       when :yield
         if node.children[0]
-          concat("yield ", visit(node.children[0]))
+          concat(
+            "yield",
+            "(",
+            visit(node.children[0]),
+            ")",
+            softline,
+          )
         else
           "yield"
         end

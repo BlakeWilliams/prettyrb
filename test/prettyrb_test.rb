@@ -51,7 +51,7 @@ class PrettyrbTest < Minitest::Test
 
     expected = <<~RUBY
       yield
-      yield 1
+      yield(1)
     RUBY
 
     assert_code_formatted(expected, source)
@@ -1467,6 +1467,30 @@ class PrettyrbTest < Minitest::Test
       'omg \S\t'
     RUBY
 
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
+
+  def test_percent_string_array
+    source = <<~RUBY
+      %w(<< concat push insert unshift)
+    RUBY
+
+    expected = <<~RUBY
+      ["<<", "concat", "push", "insert", "unshift"]
+    RUBY
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
+
+  def test_single_character
+    source = <<~RUBY
+      ?/
+    RUBY
+
+    expected = <<~RUBY
+      ?/
+    RUBY
     result = Prettyrb::Formatter.new(source).format
     assert_equal expected.rstrip, result
   end
