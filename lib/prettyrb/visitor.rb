@@ -732,7 +732,7 @@ module Prettyrb
           if node.includes_escapes? && node.is_single_quoted?
             concat(
               "'",
-              node.format,
+              node.content,
               "'",
             )
           elsif node.is_single_char?

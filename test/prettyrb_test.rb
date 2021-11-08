@@ -1642,4 +1642,17 @@ class PrettyrbTest < Minitest::Test
 
     assert_code_formatted(expected, source)
   end
+
+  def test_single_quote_escape
+    source = <<~RUBY
+      '\#{'
+    RUBY
+
+    # TODO: Remove unnecessary whitespace in empty rescue
+    expected = <<~RUBY
+      '\#{'
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
 end

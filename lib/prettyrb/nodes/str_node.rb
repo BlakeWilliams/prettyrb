@@ -19,7 +19,7 @@ module Prettyrb
 
       def content
         raw_content = loc.expression.source
-        if raw_content[0].in?(STRING_WRAPPERS)
+        if STRING_WRAPPERS.include?(raw_content[0])
           raw_content[1...-1]
         else
           raw_content
