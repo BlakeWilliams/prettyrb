@@ -3,6 +3,7 @@ module Prettyrb
     module StringHelper
       HEREDOC_TYPE_REGEX = /<<([~-])?/
       SPECIFIER_REGEX = /[a-zA-Z]/
+      QUOTE_REGEX = /<<[~-]?'/
 
       def percent_string?
         loc.expression.source.start_with?("%")
@@ -20,6 +21,10 @@ module Prettyrb
         end
       end
 
+      def needs_single_quotes?
+        QUOTE_REGEX.match?(loc.expression.source)
+      end
+
       def start_delimiter
         if has_specifier?
           loc.expression.source[2]
@@ -34,6 +39,14 @@ module Prettyrb
 
       def heredoc_identifier
         loc.heredoc_end.source.strip
+      end
+
+      def formatted_heredoc_identifier
+        if needs_single_quotes?
+          "'" + heredoc_identifier + "'"
+        else
+          heredoc_identifier
+        end
       end
 
       def heredoc_type
@@ -56,7 +69,7 @@ module Prettyrb
         parent = top_level_send_argument&.parent
 
         if parent
-          parent.type == :send && parent.to_a.index(top_level_send_argument) > 1
+          parent.type == :send && parent.to_a.index(top_level_send_argument) > 1 && parent&.children[1] != :[]=
         else
           false
         end

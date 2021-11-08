@@ -279,7 +279,12 @@ module Prettyrb
             if_break(without_break: " ", with_break: ""),
             indent(
               softline,
-              visit(node.children[0]),
+              join(
+                separator: ",",
+                parts: node.children.map do |child|
+                  concat(softline, visit(child))
+                end
+              ),
               only_when_break: true
             )
           )
@@ -343,10 +348,10 @@ module Prettyrb
               next_child = node.children[index + 1]
               excluded_types = [:class, :module, :sclass, :def, :defs]
 
-              if (excluded_types.include?(child.type) && node.children.last != child) ||
-                  (next_child&.type != child.type && node.children.last != child)
+              if (excluded_types.include?(child.type) && index != node.children.length - 1) ||
+                  (next_child&.type != child.type && index != node.children.length - 1)
                 children << hardline(count: 2)
-              elsif node.children.last != child
+              elsif index != node.children.length - 1
                 children << hardline
               end
             end
@@ -501,7 +506,14 @@ module Prettyrb
           concat(
             visit(node.target),
             "[",
-            visit(node.children[2]),
+            group(
+              join(
+                separator: ",",
+                parts: node.children.slice(2, node.children.length).map do |child|
+                  concat(softline, visit(child))
+                end,
+              )
+            ),
             "]"
           )
         elsif node.negate?
@@ -695,14 +707,14 @@ module Prettyrb
             concat(
               "<<",
               node.heredoc_type,
-              node.heredoc_identifier,
+              node.formatted_heredoc_identifier,
               method_calls,
             )
           else
             concat(
               "<<",
               node.heredoc_type,
-              node.heredoc_identifier,
+              node.formatted_heredoc_identifier,
               method_calls,
               hardline(skip_indent: true),
               node.heredoc_body,
@@ -851,8 +863,17 @@ module Prettyrb
         "**nil"
       when :lvar, :cvar, :ivar, :gvar
         node.children[0].to_s
-      when :true, :false, :nil, :self, :break
+      when :true, :false, :nil, :self
         node.type.to_s
+      when :break
+        if node.children.empty?
+          "break"
+        else
+          concat(
+            "break ",
+            visit(node.children[0])
+          )
+        end
       when :cbase
         "::"
       when :kwbegin

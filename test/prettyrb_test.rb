@@ -147,6 +147,18 @@ class PrettyrbTest < Minitest::Test
     assert_code_formatted(expected, source)
   end
 
+  def test_return_mutli_value
+    source = <<~RUBY
+    return 1, 2
+    RUBY
+
+    expected = <<~RUBY
+    return 1, 2
+    RUBY
+
+    assert_code_formatted(expected, source)
+  end
+
   def test_defs_are_multilined
     source = <<~RUBY
     def foo
@@ -1654,5 +1666,86 @@ class PrettyrbTest < Minitest::Test
     RUBY
 
     assert_code_formatted(expected, source)
+  end
+
+  def test_multi_access
+    source = <<~RUBY
+      name[foo, bar]
+    RUBY
+
+    expected = <<~RUBY
+      name[foo, bar]
+    RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
+
+  def test_break_value
+    source = <<~RUBY
+      break omg
+    RUBY
+
+    expected = <<~RUBY
+      break omg
+    RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
+
+  def test_handles_duplicates
+    source = <<~RUBY
+      def baz
+        foo
+        bar
+        foo
+      end
+    RUBY
+
+    expected = <<~RUBY
+      def baz
+        foo
+        bar
+        foo
+      end
+    RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected.rstrip, result
+  end
+
+  def test_hash_assign_heredoc
+    source = <<~RUBY
+      FOO["bar"] = <<-EOT
+        omg
+      EOT
+    RUBY
+
+    expected = <<~RUBY
+FOO["bar"] = <<-EOT
+  omg
+EOT
+RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected, result
+  end
+
+  def test_hash_heredoc_quotes
+    source = <<~RUBY
+      FOO["bar"] = <<-'EOT'
+        omg
+      EOT
+    RUBY
+
+    expected = <<~RUBY
+FOO["bar"] = <<-'EOT'
+  omg
+EOT
+RUBY
+
+    result = Prettyrb::Formatter.new(source).format
+    assert_equal expected, result
   end
 end
